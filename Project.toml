@@ -1,0 +1,4 @@
+name = "BSE_SC"
+uuid = "646ec391-26e4-4808-a965-02314d3a2269"
+authors = ["Julian Stobbe <Atomtomate@gmx.de>"]
+version = "0.1.0"
