@@ -8,14 +8,14 @@
 end
 
 @testset "calc_χ₀" begin 
-    gi_s0 = read_gImp("test_data/ED_out_b10.0_u1.0_20_20_s0.jld2")
+    gi_s0 = read_gImp("test_data/ED_s0.jld2")
     χ₀_s0 = calc_χ₀(gi_s0, 10.0, 20, 20, 0)
-    gi_s1 = read_gImp("test_data/ED_out_b10.0_u1.0_20_20_s1.jld2")
+    gi_s1 = read_gImp("test_data/ED_s1.jld2")
     χ₀_s1 = calc_χ₀(gi_s1, 10.0, 20, 20, 1)
-    @test χ₀_s0[1,0,0] ≈ -gi_s0[0]*gi_s0[0]*10.0
-    @test χ₀_s1[1,0,0] ≈ -gi_s1[0]*gi_s1[0]*10.0
-    @test χ₀_s0[1,10,5] ≈ -gi_s0[10]*gi_s0[5+10]*10.0
-    @test χ₀_s1[1,10,5] ≈ -gi_s1[10]*gi_s1[5+10]*10.0
-    @test χ₀_s0[1,10,-5] ≈ -gi_s0[10]*gi_s0[-5+10]*10.0
-    @test χ₀_s1[1,10,-5] ≈ -gi_s1[10]*gi_s1[-5+10]*10.0
+    @test χ₀_s0[0+21,0+21] ≈ -gi_s0[0]*gi_s0[0]*10.0
+    @test χ₀_s1[0+21,0+21] ≈ -gi_s1[0]*gi_s1[0]*10.0
+    @test χ₀_s0[10+21,5+21] ≈ -gi_s0[10]*gi_s0[5+10]*10.0
+    @test χ₀_s1[10+21,5+21] ≈ -gi_s1[10]*gi_s1[5+10]*10.0
+    @test χ₀_s0[10+21,-5+21] ≈ -gi_s0[10]*gi_s0[-5+10]*10.0
+    @test χ₀_s1[10+21,-5+21] ≈ -gi_s1[10]*gi_s1[-5+10]*10.0
 end
