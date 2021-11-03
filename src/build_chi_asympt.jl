@@ -52,7 +52,8 @@ function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U
 
     for ωi in axes(χch, 3)
         # setup 
-        ω_off = -shift*trunc(Int,(ωi-n_iω-1)/2)
+        #TODO: test w_offset here
+        ω_off = shift*trunc(Int,(ωi-n_iω-1)/2)
         ind1_list_corner, ind2_list_corner = aux_indices(I_corner, ωi, n_iω, n_iν, shift)
         ind1_list_ν, ind2_list_ν = aux_indices(I_ν, ωi, n_iω, n_iν, shift)
 
