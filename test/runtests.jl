@@ -16,4 +16,7 @@ using BSE_SC
 end
 
 @testset "functional tests" begin
+    @testset "s0" begin
+        include("test_s0.jl") 
+    end
 end
