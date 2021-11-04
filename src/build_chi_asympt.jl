@@ -40,10 +40,9 @@ function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U
     n_iν   = trunc(Int,Nν_full/2)
 
     # internal arrays
-    I_core, I_corner, I_r, I_t = shell_indices(Nν_full, Nν_shell)
-    I_ν = union(I_r, I_t)
-    I_all = union(I_core, I_corner, I_ν)
-    I_aympt = union(I_corner, I_ν)
+    I_core, I_corner, I_t, I_r = shell_indices(Nν_full, Nν_shell)
+    I_all = union(I_core, I_corner, I_r, I_t)
+    I_aympt = union(I_corner, I_r, I_t)
 
     Fsp = Array{ComplexF64,2}(undef, Nν_full, Nν_full)
     Fch = similar(Fsp)
@@ -55,7 +54,8 @@ function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U
         #TODO: test w_offset here
         ω_off = shift*trunc(Int,(ωi-n_iω-1)/2)
         ind1_list_corner, ind2_list_corner = aux_indices(I_corner, ωi, n_iω, n_iν, shift)
-        ind1_list_ν, ind2_list_ν = aux_indices(I_ν, ωi, n_iω, n_iν, shift)
+        ind1_list_r, ind2_list_r = aux_indices(I_r, ωi, n_iω, n_iν, shift)
+        ind1_list_t, ind2_list_t = aux_indices(I_t, ωi, n_iω, n_iν, shift)
 
         #println(size(Fsp))
         #println(size(χsp))
@@ -69,12 +69,15 @@ function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U
 
         # SC
         converged = false
-        for i in 1:2
+        for i in 1:8
             #TODO: while !converged
             χsp_n = update_χ!(λsp, view(χsp,:,:,ωi), Fsp, view(χ₀,:,ωi), β, I_aympt)
             χch_n = update_χ!(λch, view(χch,:,:,ωi), Fch, view(χ₀,:,ωi), β, I_aympt)
-            update_Fsp!(Fsp, λsp, χsp_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_ν, ind1_list_corner, ind2_list_corner, ind1_list_ν, ind2_list_ν)
-            update_Fch!(Fch, λch, χch_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_ν, ind1_list_corner, ind2_list_corner, ind1_list_ν, ind2_list_ν)
+            update_Fsp!(Fsp, λsp, χsp_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner, 
+                        ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t)
+            update_Fch!(Fch, λch, χch_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner, 
+                        ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t)
+            ωi == 1 && println("$χsp_n, $χch_n")
             #TODO: check convergence
             converged = true
         end
@@ -82,37 +85,51 @@ function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U
     return 
 end
 
-function update_Fsp!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float64, I_corner, I_ν, ind1_list_corner, ind2_list_corner, ind1_list_ν, ind2_list_ν)
+function update_Fsp!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float64, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner, 
+                    ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t)
     for i in 1:length(I_corner)
         i1 = I_corner[i]
         i2 = ind1_list_corner[i]
         i3 = ind2_list_corner[i]
         F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] + U*λ[i1[1]] + U*λ[i1[2]] + (U^2)*χ    
     end
-    for i in 1:length(I_ν)
-        i1 = I_ν[i]
-        i2 = ind1_list_ν[i]
-        i3 = ind2_list_ν[i]
-        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] + U*λ[i1[1]] + U*λ[i1[2]] 
+    for i in 1:length(I_r)
+        i1 = I_r[i]
+        i2 = ind1_list_r[i]
+        i3 = ind2_list_r[i]
+        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] + U*λ[i1[1]] #+ (U^2)*χ
+    end
+    for i in 1:length(I_t)
+        i1 = I_t[i]
+        i2 = ind1_list_t[i]
+        i3 = ind2_list_t[i]
+        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] + U*λ[i1[2]] #+ (U^2)*χ
     end
 end
 
-function update_Fch!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float64, I_corner, I_ν, ind1_list_corner, ind2_list_corner, ind1_list_ν, ind2_list_ν)
+function update_Fch!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float64, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner, 
+                    ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t)
     for i in 1:length(I_corner)
         i1 = I_corner[i]
         i2 = ind1_list_corner[i]
         i3 = ind2_list_corner[i]
         F[i1] = -U + (U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3] + U*λ[i1[1]] + U*λ[i1[2]] + (U^2)*χ    
     end
-    for i in 1:length(I_ν)
-        i1 = I_ν[i]
-        i2 = ind1_list_ν[i]
-        i3 = ind2_list_ν[i]
-        F[i1] = -U + (U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3] + U*λ[i1[1]] + U*λ[i1[2]] 
+    for i in 1:length(I_r)
+        i1 = I_r[i]
+        i2 = ind1_list_r[i]
+        i3 = ind2_list_r[i]
+        F[i1] = -U + (U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3] + U*λ[i1[1]] #+ (U^2)*χ
+    end
+    for i in 1:length(I_t)
+        i1 = I_t[i]
+        i2 = ind1_list_t[i]
+        i3 = ind2_list_t[i]
+        F[i1] = -U + (U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3] + U*λ[i1[2]] #+ (U^2)*χ
     end
 end
 
-function update_χ!(λ, χ::AbstractArray{ComplexF64,2}, F::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, β::Float64, indices)
+function update_χ!(λ, χ::AbstractArray, F::AbstractArray, χ₀::AbstractArray, β::Float64, indices)
     for i in indices
         (i[1] == i[2]) && (χ[i[1],i[1]] = χ₀[i[1]])
         χ[i] -= χ₀[i[1]]*F[i]*χ₀[i[2]]/(β^2)
