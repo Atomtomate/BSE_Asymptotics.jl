@@ -32,7 +32,7 @@ function aux_indices(ind_lst::Vector{CartesianIndex{2}}, ωi::Int, n_iω::Int, n
     return ind1_list, ind2_list
 end
 
-function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U::Float64, β::Float64, Nν_shell::Int, shift::Int)
+function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U::Float64, β::Float64, Nν_shell::Int, shift::Int; active_terms=[1,1,1,1])
     Nν_full = size(χch, 1)
     #TODO: this assumes -nν:nν-1
     Nν_c = size(χch, 1) - 2*Nν_shell
@@ -44,13 +44,18 @@ function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U
     I_all = sort(union(I_core, I_corner, I_r, I_t))
     I_aympt = sort(union(I_corner, I_r, I_t))
 
+    Fsp_trace = []
+    Fch_trace = []
     Fsp = Array{ComplexF64,2}(undef, Nν_full, Nν_full)
     Fch = similar(Fsp)
     λsp = Array{ComplexF64, 1}(undef, Nν_full)
     λch = similar(λsp)
+    println(size(χ₀))
+    println(size(χsp))
 
-    for ωi in axes(χch, 3)
-            #println("it = $ωi")
+    for ωi in (n_iω+1):(n_iω+1)#axes(χch,3) 
+        print(ωi )
+        flush(stdout)
         # setup 
         #TODO: test w_offset here
         ω_off = shift*trunc(Int,(ωi-n_iω-1)/2)
@@ -58,98 +63,90 @@ function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U
         ind1_list_r, ind2_list_r = aux_indices(I_r, ωi, n_iω, n_iν, shift)
         ind1_list_t, ind2_list_t = aux_indices(I_t, ωi, n_iω, n_iν, shift)
 
-        #println(size(Fsp))
-        #println(size(χsp))
         #println(size(χ₀))
-        for i in I_all
+        fill!(Fsp, 0.0)
+        fill!(Fch, 0.0)
+        for i in I_core
             δ_ννp = Float64(i[1] == i[2])
-            #println(i)
             Fsp[i] = - β^2 * (χsp[i,ωi] - δ_ννp*χ₀[i[1],ωi])/(χ₀[i[1],ωi]*χ₀[i[2],ωi])
             Fch[i] = - β^2 * (χch[i,ωi] - δ_ννp*χ₀[i[1],ωi])/(χ₀[i[1],ωi]*χ₀[i[2],ωi])
         end
-
         # SC
+        Nit = 50
         converged = false
-        for i in 1:50
+        for i in 1:Nit
+            ωi == (n_iω + 1) && push!(Fsp_trace, deepcopy(Fsp))
+            ωi == (n_iω + 1) && push!(Fch_trace, deepcopy(Fch))
             #TODO: while !converged
             χsp_n = update_χ!(λsp, view(χsp,:,:,ωi), Fsp, view(χ₀,:,ωi), β, I_aympt)
             χch_n = update_χ!(λch, view(χch,:,:,ωi), Fch, view(χ₀,:,ωi), β, I_aympt)
-            λch = -λch
             update_Fsp!(Fsp, λsp, χsp_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner, 
-                        ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t)
+                        ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t, active_terms)
             update_Fch!(Fch, λch, χch_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner, 
-                        ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t)
-            #ωi == 1 && println("$χsp_n, $χch_n")
+                        ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t, active_terms)
+            ((ωi == n_iω+1) && i < 5) && println("$(real(χsp_n)), $(real(χch_n))")
             #TODO: check convergence
             converged = true
         end
     end
-    return 
+    return Fsp_trace, Fch_trace
 end
 
 function update_Fsp!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float64, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner, 
-                    ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t)
+                    ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t, ac)
     for i in 1:length(I_corner)
         i1 = I_corner[i]
         i2 = ind1_list_corner[i]
         i3 = ind2_list_corner[i]
-        F[i1] = -U + (U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3] + (U^2)*χ
+        F[i1] = -U + (U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3] - (U^2)*χ # + U*λ[i1[1]]  + U*λ[i1[2]]
     end
     for i in 1:length(I_r)
         i1 = I_r[i]
         i2 = ind1_list_r[i]
         i3 = ind2_list_r[i]
-        #F[i1] = -U + (U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3] + U*λ[i1[1]] + (U^2)*χ
-        F[i1] = -U + U*λ[i1[1]] + (U^2)*χ
+        F[i1] = -U + U*λ[i1[1]]
     end
     for i in 1:length(I_t)
         i1 = I_t[i]
         i2 = ind1_list_t[i]
         i3 = ind2_list_t[i]
-        #F[i1] = -U + (U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3] + U*λ[i1[2]] + (U^2)*χ
-        F[i1] = -U + U*λ[i1[2]] + (U^2)*χ
+        F[i1] = -U + U*λ[i1[2]]
     end
 end
 
 function update_Fch!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float64, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner, 
-                    ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t)
+                    ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t, ac)
     for i in 1:length(I_corner)
         i1 = I_corner[i]
         i2 = ind1_list_corner[i]
         i3 = ind2_list_corner[i]
-        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] + (U^2)*χ    
+        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] - (U^2)*χ
     end
     for i in 1:length(I_r)
         i1 = I_r[i]
         i2 = ind1_list_r[i]
         i3 = ind2_list_r[i]
-        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] + U*λ[i1[1]] + (U^2)*χ
-        #F[i1] = U + U*λ[i1[1]] + (U^2)*χ
+        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] - U*λ[i1[1]]
     end
     for i in 1:length(I_t)
         i1 = I_t[i]
         i2 = ind1_list_t[i]
         i3 = ind2_list_t[i]
-        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] + U*λ[i1[2]] + (U^2)*χ
+        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] - U*λ[i1[2]]
         #F[i1] = U + U*λ[i1[2]] + (U^2)*χ
     end
 end
 
 function update_χ!(λ, χ::AbstractArray, F::AbstractArray, χ₀::AbstractArray, β::Float64, indices)
     for i in indices
-        #print("$i : ")
-        if i[1] == i[2] 
-            #print(" $(χ₀[i[1]])")
-            χ[i[1],i[1]] = χ₀[i[1]]
-        end
-        #println(" - $(χ₀[i[1]]) * $(F[i]) * $(χ₀[i[2]])")
+        (i[1] == i[2]) && (χ[i] = χ₀[i[1]])
         χ[i] -= χ₀[i[1]]*F[i]*χ₀[i[2]]/(β^2)
     end
     #TODO: absorb into sum
-    for νk in axes(F, 1)
+    for νk in 1:size(χ,2)
         λ[νk]  = sum(χ[:,νk]) / (-χ₀[νk]) + 1
-        λt = sum(χ[νk,:]) / (-χ₀[νk]) + 1
-        !isapprox(λ[νk] , λt, atol=0.00001) && error("ν sums not equal: $(λ[νk]) vs $(λt)")
+        #λt = sum(χ[νk,:]) / (-χ₀[νk]) + 1
+        #!isapprox(λ[νk] , λt, atol=0.00001) && error("ν sums not equal: $(λ[νk]) vs $(λt)")
     end
     χs = sum(χ)/(β^2)
     return χs
