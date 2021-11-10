@@ -1,7 +1,6 @@
 push!(LOAD_PATH,"../src/")
 using Pkg
-Pkg.activate("..")
-Pkg.add("Documenter")
+Pkg.activate(".")
 using Documenter
 using BSE_SC
 
