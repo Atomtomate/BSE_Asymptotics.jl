@@ -62,6 +62,10 @@ jobs:
         run: julia --project=docs/ -e '
             using Pkg;
             Pkg.add("Documenter");
+            Pkg.add("JLD2");
+            Pkg.add("LinearAlgebra");
+            Pkg.add("OffsetArrays");
+            Pkg.add("Test");
             Pkg.develop(PackageSpec(path=pwd()));
             Pkg.instantiate()'
       - name: Build and deploy
