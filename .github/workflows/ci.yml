@@ -62,7 +62,7 @@ jobs:
         run: julia -e '
             using Pkg;
             Pkg.add("Documenter");
-            Pkg.activate(PackageSpec(path=pwd()));
+            Pkg.activate(".");
             Pkg.instantiate()'
       - name: Build and deploy
         env:
