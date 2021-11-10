@@ -9,7 +9,7 @@ function setup(input_file::String, N_shell::Int)
     gImp = read_gImp(input_file)
     χ₀, χDMFTsp, χDMFTch, χ_sp_asympt, χ_ch_asympt, χ_pp_asympt, U, β, shift = jldopen(input_file, "r") do f
         χ₀ = calc_χ₀(gImp, f["β"], f["grid_nBose"], f["grid_nFermi"]+N_shell, f["grid_shift"])
-        χ₀, permutedims(f["χDMFTsp"], (2,3,1)), permutedims(f["χDMFTch"], (2,3,1)), f["χ_sp_asympt"] ./ f["β"]^2, f["χ_ch_asympt"] ./ f["β"]^2, f["χ_pp_asympt"] ./ f["β"]^2, f["U"], f["β"], f["grid_shift"]
+        χ₀, permutedims(f["χDMFTsp"], (2,3,1)), permutedims(f["χDMFTch"], (2,3,1)), 2*f["χ_sp_asympt"] ./ f["β"]^2, 2*f["χ_ch_asympt"] ./ f["β"]^2, f["χ_pp_asympt"] ./ f["β"]^2, f["U"], f["β"], f["grid_shift"]
     end
     Nν_full = size(χDMFTsp,1) + 2*N_shell
     Nω = size(χDMFTsp,3)

@@ -20,6 +20,18 @@ function shell_indices(Nν_full::Int, Nν_shell::Int)
     return I_core, I_corner, I_top_bottom, I_left_right
 end
 
+function χ₀_indices(ind_lst::Vector{CartesianIndex{2}}, ωi::Int, n_iω::Int, n_iν::Int, shift::Int)
+    ind1_list = Vector{Int}(undef, length(ind_lst))    # ν
+    ind2_list = Vector{Int}(undef, length(ind_lst))    # ν'
+    for (i,ind) in enumerate(ind_lst)
+        ωn, νn, = OneToIndex_to_Freq(ωi, ind[1], n_iω, n_iν, shift)
+        ωn, νpn = OneToIndex_to_Freq(ωi, ind[2], n_iω, n_iν, shift)
+        ind1_list[i] = ωn_to_ωi(νn)
+        ind2_list[i] = ωn_to_ωi(νpn)
+    end
+    return ind1_list, ind2_list
+end
+
 function aux_indices(ind_lst::Vector{CartesianIndex{2}}, ωi::Int, n_iω::Int, n_iν::Int, shift::Int)
     ind1_list = Vector{Int}(undef, length(ind_lst))    # ν' - ν
     ind2_list = Vector{Int}(undef, length(ind_lst))    # ν + ν' + ω
@@ -50,10 +62,8 @@ function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U
     Fch = similar(Fsp)
     λsp = Array{ComplexF64, 1}(undef, Nν_full)
     λch = similar(λsp)
-    println(size(χ₀))
-    println(size(χsp))
 
-    for ωi in (n_iω+1):(n_iω+1)#axes(χch,3) 
+    for ωi in axes(χch,3) #(n_iω+1):(n_iω+1)#
         print(ωi )
         flush(stdout)
         # setup 
@@ -72,28 +82,34 @@ function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U
             Fch[i] = - β^2 * (χch[i,ωi] - δ_ννp*χ₀[i[1],ωi])/(χ₀[i[1],ωi]*χ₀[i[2],ωi])
         end
         # SC
-        Nit = 50
+        Nit = 200
+        χsp_old = 0.0
+        χch_old = 0.0
         converged = false
-        for i in 1:Nit
-            ωi == (n_iω + 1) && push!(Fsp_trace, deepcopy(Fsp))
-            ωi == (n_iω + 1) && push!(Fch_trace, deepcopy(Fch))
+        i = 0
+        while !converged && (i < Nit)
+            (ωi == (n_iω + 1)) && (i in [1,2,3,4,Nit]) && push!(Fsp_trace, deepcopy(Fsp))
+            (ωi == (n_iω + 1)) && (i in [1,2,3,4,Nit]) && push!(Fch_trace, deepcopy(Fch))
             #TODO: while !converged
             χsp_n = update_χ!(λsp, view(χsp,:,:,ωi), Fsp, view(χ₀,:,ωi), β, I_aympt)
             χch_n = update_χ!(λch, view(χch,:,:,ωi), Fch, view(χ₀,:,ωi), β, I_aympt)
-            update_Fsp!(Fsp, λsp, χsp_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner, 
-                        ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t, active_terms)
-            update_Fch!(Fch, λch, χch_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner, 
-                        ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t, active_terms)
-            ((ωi == n_iω+1) && i < 5) && println("$(real(χsp_n)), $(real(χch_n))")
+            update_Fsp!(Fsp, λsp, χsp_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner)
+            update_Fch!(Fch, λch, χch_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner) 
+            ((ωi == n_iω+1) && i < 50) && println("$(real(χsp_n)), $(minimum(real.(λsp)))<->$(maximum(real.(λsp))) : $(real(χch_n)),$(minimum(real.(λch)))<->$(maximum(real.(λch)))")
             #TODO: check convergence
-            converged = true
+            if (abs(χch_old - χch_n) < atol) && (abs(χsp_old - χsp_n) < atol)
+                converged = true
+            else
+                i += 1
+                χch_old = χch_n
+                χsp_old = χsp_n
+            end
         end
     end
     return Fsp_trace, Fch_trace
 end
 
-function update_Fsp!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float64, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner, 
-                    ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t, ac)
+function update_Fsp!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float64, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner)
     for i in 1:length(I_corner)
         i1 = I_corner[i]
         i2 = ind1_list_corner[i]
@@ -102,49 +118,43 @@ function update_Fsp!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float6
     end
     for i in 1:length(I_r)
         i1 = I_r[i]
-        i2 = ind1_list_r[i]
-        i3 = ind2_list_r[i]
-        F[i1] = -U + U*λ[i1[1]]
+        F[i1] = -U  + U*λ[i1[1]]
     end
     for i in 1:length(I_t)
         i1 = I_t[i]
-        i2 = ind1_list_t[i]
-        i3 = ind2_list_t[i]
-        F[i1] = -U + U*λ[i1[2]]
+        F[i1] = -U  + U*λ[i1[2]]
     end
 end
 
-function update_Fch!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float64, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner, 
-                    ind1_list_r, ind2_list_r, ind1_list_t, ind2_list_t, ac)
+function update_Fch!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float64, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner)
     for i in 1:length(I_corner)
         i1 = I_corner[i]
         i2 = ind1_list_corner[i]
         i3 = ind2_list_corner[i]
-        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] - (U^2)*χ
+        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] - (U^2)*χ #- U*λ[i1[1]] - U*λ[i1[2]]
     end
     for i in 1:length(I_r)
         i1 = I_r[i]
-        i2 = ind1_list_r[i]
-        i3 = ind2_list_r[i]
-        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] - U*λ[i1[1]]
+        F[i1] = U  - U*λ[i1[1]]
     end
     for i in 1:length(I_t)
         i1 = I_t[i]
-        i2 = ind1_list_t[i]
-        i3 = ind2_list_t[i]
-        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] - U*λ[i1[2]]
-        #F[i1] = U + U*λ[i1[2]] + (U^2)*χ
+        F[i1] = U  - U*λ[i1[2]]
     end
 end
 
 function update_χ!(λ, χ::AbstractArray, F::AbstractArray, χ₀::AbstractArray, β::Float64, indices)
     for i in indices
-        (i[1] == i[2]) && (χ[i] = χ₀[i[1]])
+        if i[1] == i[2] 
+            χ[i] = χ₀[i[1]]
+        else
+            χ[i] = 0.0
+        end
         χ[i] -= χ₀[i[1]]*F[i]*χ₀[i[2]]/(β^2)
     end
     #TODO: absorb into sum
     for νk in 1:size(χ,2)
-        λ[νk]  = sum(χ[:,νk]) / (-χ₀[νk]) + 1
+        λ[νk]  = (sum(χ[:,νk]) / (-χ₀[νk])) + 1
         #λt = sum(χ[νk,:]) / (-χ₀[νk]) + 1
         #!isapprox(λ[νk] , λt, atol=0.00001) && error("ν sums not equal: $(λ[νk]) vs $(λt)")
     end

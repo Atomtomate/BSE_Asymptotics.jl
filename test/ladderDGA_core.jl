@@ -19,3 +19,13 @@ end
     @test χ₀_s0[10+21,-5+21] ≈ -gi_s0[10]*gi_s0[-5+10]*10.0
     @test χ₀_s1[10+21-2,-5+21] ≈ -gi_s1[10]*gi_s1[-5+10]*10.0
 end
+
+@testset "n to i" begin
+    @test ωn_to_ωi(0) == 1
+    @test ωn_to_ωi(1) == 2
+    @test ωn_to_ωi(-1) == 2
+    @test νn_to_νi(0) == 1
+    @test νn_to_νi(1) == 2
+    @test νn_to_νi(-1) == 2
+νn_to_νi
+end
