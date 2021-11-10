@@ -5,3 +5,4 @@
 *.err
 *.cov
 workspace.code-workspace
+docs/build/

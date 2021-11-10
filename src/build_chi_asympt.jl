@@ -34,6 +34,12 @@ function aux_indices(ind_lst::Vector{CartesianIndex{2}}, ωi::Int, n_iω::Int, n
 end
 
 #TODO: index struct
+"""
+    improve_χ!()
+
+Improves asymptotics of `χsp` and `χch`.
+TODO: full documentation here.
+"""
 function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, Fsp, Fch, λsp, λch, U::Float64, β::Float64, Nν_shell::Int, shift::Int, I_core, I_corner, I_t, I_r, I_all, I_asympt, ind1_list_corner, ind2_list_corner)
     n_iω   = trunc(Int,size(χch,3)/2)
     n_iν   = trunc(Int,size(χch,1)/2)

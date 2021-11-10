@@ -14,7 +14,6 @@ export calc_χ₀, improve_χ!
 using LinearAlgebra
 using JLD2
 using OffsetArrays
-using PaddedViews
 
 include("ladderDGA_core.jl")
 include("IO.jl")
