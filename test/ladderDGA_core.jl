@@ -21,11 +21,10 @@ end
 end
 
 @testset "n to i" begin
-    @test ωn_to_ωi(0) == 1
-    @test ωn_to_ωi(1) == 2
-    @test ωn_to_ωi(-1) == 2
-    @test νn_to_νi(0) == 1
-    @test νn_to_νi(1) == 2
-    @test νn_to_νi(-1) == 2
-νn_to_νi
+    @test BSE_SC.ωn_to_ωi(0) == 1
+    @test BSE_SC.ωn_to_ωi(1) == 2
+    @test BSE_SC.ωn_to_ωi(-1) == 2
+    @test all(BSE_SC.OneToIndex_to_Freq(11,11,10,10,1) == (0,0))
+    @test all(BSE_SC.OneToIndex_to_Freq(1,1,10,10,1) == (-10,-5))
+    @test all(BSE_SC.OneToIndex_to_Freq(1,1,10,10,0) == (-10,-10))
 end
