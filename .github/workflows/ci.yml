@@ -59,14 +59,10 @@ jobs:
         with:
           version: 'nightly'
       - name: Install dependencies
-        run: julia --project=docs/ -e '
+        run: julia -e '
             using Pkg;
             Pkg.add("Documenter");
-            Pkg.add("JLD2");
-            Pkg.add("LinearAlgebra");
-            Pkg.add("OffsetArrays");
-            Pkg.add("Test");
-            Pkg.develop(PackageSpec(path=pwd()));
+            Pkg.activate(PackageSpec(path=pwd()));
             Pkg.instantiate()'
       - name: Build and deploy
         env:
