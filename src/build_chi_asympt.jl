@@ -40,30 +40,32 @@ end
 Improves asymptotics of `χsp` and `χch`.
 TODO: full documentation here.
 """
-function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, Fsp, Fch, λsp, λch, U::Float64, β::Float64, Nν_shell::Int, shift::Int, I_core, I_corner, I_t, I_r, I_all, I_asympt, ind1_list_corner, ind2_list_corner)
-    n_iω   = trunc(Int,size(χch,3)/2)
-    n_iν   = trunc(Int,size(χch,1)/2)
+function improve_χ!(χsp::AbstractArray{ComplexF64,3}, χch::AbstractArray{ComplexF64,3}, 
+        χ₀::AbstractArray{ComplexF64,2}, U::Float64, β::Float64, shift::Int, h::BSE_SC_Helper; 
+        Nit=200, atol=1e-8)
 
     for ωi in axes(χch,3)
-        fill!(Fsp, 0.0)
-        fill!(Fch, 0.0)
-        for i in I_core
+        i1_l = view(h.ind1_list_corner, :, ωi)
+        i2_l = view(h.ind2_list_corner, :, ωi)
+        fill!(h.Fsp, 0.0)
+        fill!(h.Fch, 0.0)
+        for i in h.I_core
             δ_ννp = Float64(i[1] == i[2])
-            Fsp[i] = - β^2 * (χsp[i,ωi] - δ_ννp*χ₀[i[1],ωi])/(χ₀[i[1],ωi]*χ₀[i[2],ωi])
-            Fch[i] = - β^2 * (χch[i,ωi] - δ_ννp*χ₀[i[1],ωi])/(χ₀[i[1],ωi]*χ₀[i[2],ωi])
+            h.Fsp[i] = - β^2 * (χsp[i,ωi] - δ_ννp*χ₀[i[1],ωi])/(χ₀[i[1],ωi]*χ₀[i[2],ωi])
+            h.Fch[i] = - β^2 * (χch[i,ωi] - δ_ννp*χ₀[i[1],ωi])/(χ₀[i[1],ωi]*χ₀[i[2],ωi])
         end
         # SC
-        Nit = 200
         χsp_old = 0.0
         χch_old = 0.0
         converged = false
         i = 0
         while !converged && (i < Nit)
-            #TODO: while !converged
-            χsp_n = update_χ!(λsp, view(χsp,:,:,ωi), Fsp, view(χ₀,:,ωi), β, I_aympt)
-            χch_n = update_χ!(λch, view(χch,:,:,ωi), Fch, view(χ₀,:,ωi), β, I_aympt)
-            update_Fsp!(Fsp, λsp, χsp_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner)
-            update_Fch!(Fch, λch, χch_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner) 
+            χsp_n = update_χ!(h.λsp, view(χsp,:,:,ωi), h.Fsp, view(χ₀,:,ωi), β, h.I_asympt)
+            χch_n = update_χ!(h.λch, view(χch,:,:,ωi), h.Fch, view(χ₀,:,ωi), β, h.I_asympt)
+            update_Fsp!(h.Fsp, h.λsp, χsp_n, h.χch_asympt, h.χsp_asympt, h.χpp_asympt, 
+                        U, h.I_corner, h.I_r, h.I_t, i1_l, i2_l)
+            update_Fch!(h.Fch, h.λch, χch_n, h.χch_asympt, h.χsp_asympt, h.χpp_asympt, 
+                        U, h.I_corner, h.I_r, h.I_t, i1_l, i2_l) 
             #TODO: check convergence
             if (abs(χch_old - χch_n) < atol) && (abs(χsp_old - χsp_n) < atol)
                 converged = true
@@ -76,7 +78,6 @@ function improve_χ!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, F
     end
 end
 
-
 function improve_χ_standalone!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U::Float64, β::Float64, Nν_shell::Int, shift::Int)
     Nν_full = size(χch, 1)
     #TODO: this assumes -nν:nν-1
@@ -87,7 +88,7 @@ function improve_χ_standalone!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χp
     # internal arrays
     I_core, I_corner, I_t, I_r = shell_indices(Nν_full, Nν_shell)
     I_all = sort(union(I_core, I_corner, I_r, I_t))
-    I_aympt = sort(union(I_corner, I_r, I_t))
+    I_asympt = sort(union(I_corner, I_r, I_t))
 
     Fsp = Array{ComplexF64,2}(undef, Nν_full, Nν_full)
     Fch = similar(Fsp)
@@ -116,8 +117,8 @@ function improve_χ_standalone!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χp
         i = 0
         while !converged && (i < Nit)
             #TODO: while !converged
-            χsp_n = update_χ!(λsp, view(χsp,:,:,ωi), Fsp, view(χ₀,:,ωi), β, I_aympt)
-            χch_n = update_χ!(λch, view(χch,:,:,ωi), Fch, view(χ₀,:,ωi), β, I_aympt)
+            χsp_n = update_χ!(λsp, view(χsp,:,:,ωi), Fsp, view(χ₀,:,ωi), β, I_asympt)
+            χch_n = update_χ!(λch, view(χch,:,:,ωi), Fch, view(χ₀,:,ωi), β, I_asympt)
             update_Fsp!(Fsp, λsp, χsp_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner)
             update_Fch!(Fch, λch, χch_n, χch_asympt, χsp_asympt, χpp_asympt, U, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner) 
             #TODO: check convergence
