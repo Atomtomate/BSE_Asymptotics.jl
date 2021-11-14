@@ -2,10 +2,8 @@ struct BSE_SC_Helper
     χsp_asympt::Array{ComplexF64,1}
     χch_asympt::Array{ComplexF64,1}
     χpp_asympt::Array{ComplexF64,1}
-    Fsp::Array{ComplexF64,2}
-    Fch::Array{ComplexF64,2}
-    λsp::Array{ComplexF64,1}
-    λch::Array{ComplexF64,1}
+    Fr::Array{ComplexF64,2}
+    λr::Array{ComplexF64,1}
     Nν_shell::Int
     I_core::Array{CartesianIndex{2},1}
     I_corner::Array{CartesianIndex{2},1}
@@ -27,12 +25,10 @@ struct BSE_SC_Helper
             ind1_list_corner[:,ωi] = i1
             ind2_list_corner[:,ωi] = i2
         end
-        Fsp = Array{ComplexF64,2}(undef, Nν_full, Nν_full)
-        Fch = Array{ComplexF64,2}(undef, Nν_full, Nν_full)
-        λsp = Array{ComplexF64,1}(undef, Nν_full)
-        λch = Array{ComplexF64,1}(undef, Nν_full)
+        Fr = Array{ComplexF64,2}(undef, Nν_full, Nν_full)
+        λr = Array{ComplexF64,1}(undef, Nν_full)
 
-        new(χsp_asympt, χch_asympt, χpp_asympt, Fsp, Fch, λsp, λch, Nν_shell, I_core, I_corner,
+        new(χsp_asympt, χch_asympt, χpp_asympt, Fr, λr, Nν_shell, I_core, I_corner,
                             I_t, I_r, I_all, I_asympt, ind1_list_corner, ind2_list_corner)
     end
 end

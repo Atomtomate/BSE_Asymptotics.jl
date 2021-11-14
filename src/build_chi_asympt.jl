@@ -40,43 +40,91 @@ end
 Improves asymptotics of `χsp` and `χch`.
 TODO: full documentation here.
 """
-function improve_χ!(χsp::AbstractArray{ComplexF64,3}, χch::AbstractArray{ComplexF64,3}, 
-        χ₀::AbstractArray{ComplexF64,2}, U::Float64, β::Float64, shift::Int, h::BSE_SC_Helper; 
-        Nit=200, atol=1e-8)
+function improve_χ!(type::Symbol, ωi::Int, χr::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
+                U::Float64, β::Float64, shift::Int, h::BSE_SC_Helper; Nit=200, atol=1e-8)
+    f = if type == :sp
+        update_Fsp!
+    elseif type == :ch
+        update_Fch!
+    else
+        error("Unkown channel. Only sp/ch implemented")
+    end
 
-    for ωi in axes(χch,3)
-        i1_l = view(h.ind1_list_corner, :, ωi)
-        i2_l = view(h.ind2_list_corner, :, ωi)
-        fill!(h.Fsp, 0.0)
-        fill!(h.Fch, 0.0)
-        for i in h.I_core
-            δ_ννp = Float64(i[1] == i[2])
-            h.Fsp[i] = - β^2 * (χsp[i,ωi] - δ_ννp*χ₀[i[1],ωi])/(χ₀[i[1],ωi]*χ₀[i[2],ωi])
-            h.Fch[i] = - β^2 * (χch[i,ωi] - δ_ννp*χ₀[i[1],ωi])/(χ₀[i[1],ωi]*χ₀[i[2],ωi])
-        end
-        # SC
-        χsp_old = 0.0
-        χch_old = 0.0
-        converged = false
-        i = 0
-        while !converged && (i < Nit)
-            χsp_n = update_χ!(h.λsp, view(χsp,:,:,ωi), h.Fsp, view(χ₀,:,ωi), β, h.I_asympt)
-            χch_n = update_χ!(h.λch, view(χch,:,:,ωi), h.Fch, view(χ₀,:,ωi), β, h.I_asympt)
-            update_Fsp!(h.Fsp, h.λsp, χsp_n, h.χch_asympt, h.χsp_asympt, h.χpp_asympt, 
-                        U, h.I_corner, h.I_r, h.I_t, i1_l, i2_l)
-            update_Fch!(h.Fch, h.λch, χch_n, h.χch_asympt, h.χsp_asympt, h.χpp_asympt, 
-                        U, h.I_corner, h.I_r, h.I_t, i1_l, i2_l) 
-            #TODO: check convergence
-            if (abs(χch_old - χch_n) < atol) && (abs(χsp_old - χsp_n) < atol)
-                converged = true
-            else
-                i += 1
-                χch_old = χch_n
-                χsp_old = χsp_n
-            end
+    fill!(h.Fr, 0.0)
+    for i in h.I_core
+        δ_ννp = Float64(i[1] == i[2])
+        h.Fr[i] = - β^2 * (χr[i] - δ_ννp*χ₀[i[1]])/(χ₀[i[1]]*χ₀[i[2]])
+    end
+    χr_old = 0.0
+    converged = false
+    i = 0
+    while !converged && (i < Nit)
+        χr_n = update_χ!(h.λr, χr, h.Fr, χ₀, β, h.I_asympt)
+        f(χr_n, U, ωi, h)
+        if (abs(χr_old - χr_n) < atol)
+            converged = true
+        else
+            i += 1
+            χr_old = χr_n
         end
     end
 end
+
+function update_Fsp!(χ::ComplexF64, U::Float64, ωi::Int, h::BSE_SC_Helper)
+    i1_l = view(h.ind1_list_corner, :, ωi)
+    i2_l = view(h.ind2_list_corner, :, ωi)
+    for i in 1:length(h.I_corner)
+        i1 = h.I_corner[i]
+        i2 = i1_l[i]
+        i3 = i2_l[i]
+        h.Fr[i1] = -U + (U^2/2)*h.χch_asympt[i2] - (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3] - (U^2)*χ # + U*λ[i1[1]]  + U*λ[i1[2]]
+    end
+    for i in 1:length(h.I_r)
+        i1 = h.I_r[i]
+        h.Fr[i1] = -U  + U*h.λr[i1[1]]
+    end
+    for i in 1:length(h.I_t)
+        i1 = h.I_t[i]
+        h.Fr[i1] = -U  + U*h.λr[i1[2]]
+    end
+end
+
+function update_Fch!(χ::ComplexF64, U::Float64, ωi::Int, h::BSE_SC_Helper)
+    i1_l = view(h.ind1_list_corner, :, ωi)
+    i2_l = view(h.ind2_list_corner, :, ωi)
+    for i in 1:length(h.I_corner)
+        i1 = h.I_corner[i]
+        i2 = i1_l[i]
+        i3 = i2_l[i]
+        h.Fr[i1] = U + (U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3] - (U^2)*χ #- U*λ[i1[1]] - U*λ[i1[2]]
+    end
+    for i in 1:length(h.I_r)
+        i1 = h.I_r[i]
+        h.Fr[i1] = U  - U*h.λr[i1[1]]
+    end
+    for i in 1:length(h.I_t)
+        i1 = h.I_t[i]
+        h.Fr[i1] = U  - U*h.λr[i1[2]]
+    end
+end
+
+function update_χ!(λ, χ::AbstractArray, F::AbstractArray, χ₀::AbstractArray, β::Float64, indices)
+    for i in indices
+        if i[1] == i[2] 
+            χ[i] = χ₀[i[1]]
+        else
+            χ[i] = 0.0
+        end
+        χ[i] -= χ₀[i[1]]*F[i]*χ₀[i[2]]/(β^2)
+    end
+    #TODO: absorb into sum
+    for νk in 1:size(χ,2)
+        λ[νk]  = (sum(χ[:,νk]) / (-χ₀[νk])) + 1
+    end
+    χs = sum(χ)/(β^2)
+    return χs
+end
+
 
 function improve_χ_standalone!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χpp_asympt, U::Float64, β::Float64, Nν_shell::Int, shift::Int)
     Nν_full = size(χch, 1)
@@ -133,53 +181,3 @@ function improve_χ_standalone!(χsp, χch, χ₀, χsp_asympt, χch_asympt, χp
     end
 end
 
-function update_Fsp!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float64, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner)
-    for i in 1:length(I_corner)
-        i1 = I_corner[i]
-        i2 = ind1_list_corner[i]
-        i3 = ind2_list_corner[i]
-        F[i1] = -U + (U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3] - (U^2)*χ # + U*λ[i1[1]]  + U*λ[i1[2]]
-    end
-    for i in 1:length(I_r)
-        i1 = I_r[i]
-        F[i1] = -U  + U*λ[i1[1]]
-    end
-    for i in 1:length(I_t)
-        i1 = I_t[i]
-        F[i1] = -U  + U*λ[i1[2]]
-    end
-end
-
-function update_Fch!(F, λ, χ, χch_asympt, χsp_asympt, χpp_asympt, U::Float64, I_corner, I_r, I_t, ind1_list_corner, ind2_list_corner)
-    for i in 1:length(I_corner)
-        i1 = I_corner[i]
-        i2 = ind1_list_corner[i]
-        i3 = ind2_list_corner[i]
-        F[i1] = U + (U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3] - (U^2)*χ #- U*λ[i1[1]] - U*λ[i1[2]]
-    end
-    for i in 1:length(I_r)
-        i1 = I_r[i]
-        F[i1] = U  - U*λ[i1[1]]
-    end
-    for i in 1:length(I_t)
-        i1 = I_t[i]
-        F[i1] = U  - U*λ[i1[2]]
-    end
-end
-
-function update_χ!(λ, χ::AbstractArray, F::AbstractArray, χ₀::AbstractArray, β::Float64, indices)
-    for i in indices
-        if i[1] == i[2] 
-            χ[i] = χ₀[i[1]]
-        else
-            χ[i] = 0.0
-        end
-        χ[i] -= χ₀[i[1]]*F[i]*χ₀[i[2]]/(β^2)
-    end
-    #TODO: absorb into sum
-    for νk in 1:size(χ,2)
-        λ[νk]  = (sum(χ[:,νk]) / (-χ₀[νk])) + 1
-    end
-    χs = sum(χ)/(β^2)
-    return χs
-end
