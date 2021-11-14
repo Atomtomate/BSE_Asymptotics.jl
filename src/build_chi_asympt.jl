@@ -41,7 +41,7 @@ Improves asymptotics of `χsp` and `χch`.
 TODO: full documentation here.
 """
 function improve_χ!(type::Symbol, ωi::Int, χr::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
-                U::Float64, β::Float64, shift::Int, h::BSE_SC_Helper; Nit=200, atol=1e-8)
+                U::Float64, β::Float64, shift::Int, h::BSE_SC_Helper; Nit=200, atol=1e-9)
     f = if type == :sp
         update_Fsp!
     elseif type == :ch
@@ -68,6 +68,7 @@ function improve_χ!(type::Symbol, ωi::Int, χr::AbstractArray{ComplexF64,2}, �
             χr_old = χr_n
         end
     end
+    return i
 end
 
 function update_Fsp!(χ::ComplexF64, U::Float64, ωi::Int, h::BSE_SC_Helper)
