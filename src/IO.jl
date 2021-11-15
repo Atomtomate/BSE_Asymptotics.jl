@@ -31,7 +31,7 @@ function setup(input_file::String, N_shell::Int)
     χ_ch_improved[(N_shell+1):(end-N_shell),(N_shell+1):(end-N_shell),:] = χDMFTch
 
     n_iω   = trunc(Int,size(χDMFTch,3)/2)
-    n_iν   = trunc(Int,size(χDMFTch,1)/2)
+    n_iν   = trunc(Int,Nν_full/2)
     helper = BSE_SC_Helper(χ_sp_asympt, χ_ch_asympt, χ_pp_asympt, Nν_full, N_shell, n_iω, n_iν, shift)
     return gImp, χ₀, χ_sp_improved, χ_ch_improved, helper, U, β, shift
 end

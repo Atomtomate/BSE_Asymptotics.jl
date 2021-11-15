@@ -10,13 +10,26 @@
 end
 
 @testset "auxiliary indices" begin
-    Nν_full = 7
+    Nν_full = 8
     Nν_shell = 2
     shift = 0
-    test_arr = reshape(1:(Nν_full*Nν_full), (Nν_full,Nν_full))
     I_core, I_corner, I_top, I_side = BSE_SC.shell_indices(Nν_full, Nν_shell)
-    ωi = 3
     n_iω = 5
     n_iν = trunc(Int, Nν_full/2)
-    ind1_c, ind2_c = BSE_SC.aux_indices(I_corner, ωi, n_iω, n_iν, shift)
+    ind1_check = [1,2,     7,8,
+                  2,1,     6,7,
+
+                  7,6,     1,2,
+                  8,7,     2,1]
+    ind2_check = [8,7,     2,1,
+                  7,6,     1,2,
+
+                  2,1,     6,7,
+                  1,2,     7,8]
+    ind1_s0, ind2_s0 = BSE_SC.aux_indices(I_corner, 1, n_iω, n_iν, shift)
+    @test all(ind1_s0 .== ind1_check)
+    ind1_s0, ind2_s0 = BSE_SC.aux_indices(I_corner, 3, n_iω, n_iν, shift)
+    @test all(ind1_s0 .== ind1_check)
+    ind1_s0, ind2_s0 = BSE_SC.aux_indices(I_corner, 4, n_iω, n_iν, shift)
+    @test all(ind1_s0 .== ind1_check)
 end
