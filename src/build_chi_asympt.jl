@@ -51,6 +51,7 @@ function improve_χ!(type::Symbol, ωi::Int, χr::AbstractArray{ComplexF64,2}, �
     end
 
     fill!(h.Fr, 0.0)
+    fill!(h.λr, 0.0)
     for i in h.I_core
         δ_ννp = Float64(i[1] == i[2])
         h.Fr[i] = - β^2 * (χr[i] - δ_ννp*χ₀[i[1]])/(χ₀[i[1]]*χ₀[i[2]])
@@ -78,15 +79,15 @@ function update_Fsp!(χ::ComplexF64, U::Float64, ωi::Int, h::BSE_SC_Helper)
         i1 = h.I_asympt[i]
         i2 = i1_l[i]
         i3 = i2_l[i]
-        h.Fr[i1] = -U + (U^2/2)*h.χch_asympt[i2] - (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3] - (U^2)*χ # + U*λ[i1[1]]  + U*λ[i1[2]]
+        h.Fr[i1] = -U - (U^2)*χ + (U^2/2)*h.χch_asympt[i2] - (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3] # + U*λ[i1[1]]  + U*λ[i1[2]]
     end
     for i in 1:length(h.I_r)
         i1 = h.I_r[i]
-        h.Fr[i1] = U*h.λr[i1[1]] + (U^2)*χ
+        h.Fr[i1] += U*h.λr[i1[1]] + 1*(U^2)*χ
     end
     for i in 1:length(h.I_t)
         i1 = h.I_t[i]
-        h.Fr[i1] = U*h.λr[i1[2]] + (U^2)*χ
+        h.Fr[i1] += U*h.λr[i1[2]] + 1*(U^2)*χ
     end
 end
 
@@ -97,15 +98,15 @@ function update_Fch!(χ::ComplexF64, U::Float64, ωi::Int, h::BSE_SC_Helper)
         i1 = h.I_asympt[i]
         i2 = i1_l[i]
         i3 = i2_l[i]
-        h.Fr[i1] = U + (U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3] - (U^2)*χ #- U*λ[i1[1]] - U*λ[i1[2]]
+        h.Fr[i1] = U - (U^2)*χ  + (U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3] #- U*λ[i1[1]] - U*λ[i1[2]]
     end
     for i in 1:length(h.I_r)
         i1 = h.I_r[i]
-        h.Fr[i1] = - U*h.λr[i1[1]] + (U^2)*χ
+        h.Fr[i1] += -U*h.λr[i1[1]] + 1*(U^2)*χ
     end
     for i in 1:length(h.I_t)
         i1 = h.I_t[i]
-        h.Fr[i1] = - U*h.λr[i1[2]] + (U^2)*χ
+        h.Fr[i1] += -U*h.λr[i1[2]] + 1*(U^2)*χ
     end
 end
 
