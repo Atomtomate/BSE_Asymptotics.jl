@@ -1,4 +1,4 @@
-Self constistent improvement for asymptotic behaviour of susceptibilities obtained from Bethe Salpether equations.
+Self constistent improvement for asymptotic behaviour of susceptibilities obtained from Bethe Salpether equations, using eq. 12a, 12b from DOI: 10.1103/PhysRevB.97.235.140
 
 For an example usage see [LadderDGA.jl](https://github.com/Atomtomate/LadderDGA.jl)
 

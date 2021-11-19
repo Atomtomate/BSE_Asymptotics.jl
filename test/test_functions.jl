@@ -40,16 +40,19 @@ function improve_χ_trace!(type::Symbol, ωi::Int, χr::AbstractArray{ComplexF64
     while !converged && (i < Nit)
         χr_n = update_χ!(h.λr, χr, h.Fr, χ₀, β, h.I_asympt)
         f(χr_n, U, ωi, h)
+        println("$i: $(real(χr_old)) -> $(real(χr_n))")
         if (abs(χr_old - χr_n) < atol)
             converged = true
         else
             i += 1
             χr_old = χr_n
         end
-        push!(Fr_trace, deepcopy(h.Fr))
-        push!(χr_trace, deepcopy(χr))
-        push!(χlocr_trace, deepcopy(χr_old))
-        push!(λr_trace, deepcopy(h.λr))
+        if i == 1 || i == 3 || (i == Nit || converged)
+            push!(Fr_trace, deepcopy(h.Fr))
+            push!(χr_trace, deepcopy(χr))
+            push!(χlocr_trace, deepcopy(χr_old))
+            push!(λr_trace, deepcopy(h.λr))
+    end
     end
     return i, Fr_trace, χr_trace, χlocr_trace, λr_trace
 end

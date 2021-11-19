@@ -10,5 +10,5 @@
 
 ```@autodocs
 Modules = [BSE_SC]
-Pages   = ["build_chi_asympt.jl", "IO.jl", "ladderDGA_core.jl"]
+Pages   = ["build_chi_asympt.jl", "helpers.jl", "IO.jl", "ladderDGA_core.jl"]
 ```

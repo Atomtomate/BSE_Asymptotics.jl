@@ -1,6 +1,7 @@
 *.jld2
 *.txt
 *.pdf
+*.png
 *.out
 *.err
 *.cov
