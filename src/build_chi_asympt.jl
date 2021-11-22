@@ -123,8 +123,9 @@ function update_Fch!(χ::ComplexF64, U::Float64, ωi::Int, h::BSE_SC_Helper)
     =#
 end
 
-function update_χ!(λ::AbstractArray{Number,2}, χ::AbstractArray{Number,2}, F::AbstractArray{Number,2}, 
-        χ₀::AbstractArray{Number,1}, β::Float64, indices::AbstractArray{CartesianIndex{2},1})
+function update_χ!(λ::AbstractArray{ComplexF64,1}, χ::AbstractArray{ComplexF64,2}, 
+        F::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
+        β::Float64, indices::AbstractArray{CartesianIndex{2},1})
     for i in indices
         if i[1] == i[2] 
             χ[i] = χ₀[i[1]]
