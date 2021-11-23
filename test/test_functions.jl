@@ -40,7 +40,7 @@ function improve_χ_trace!(type::Symbol, ωi::Int, χr::AbstractArray{ComplexF64
     while !converged && (i < Nit)
         χr_n = update_χ!(h.λr, χr, h.Fr, χ₀, β, h.I_asympt)
         f(χr_n, U, ωi, h)
-        println("$i: $(real(χr_old)) -> $(real(χr_n))")
+        #println("$i: $(real(χr_old)) -> $(real(χr_n))")
         if (abs(χr_old - χr_n) < atol)
             converged = true
         else

@@ -48,6 +48,7 @@ Generates helper struct, for the efficient computation of the susceptibility asy
 `shift`: `1` or `0`, depending on whether or not the Fermionic frequencies are shifted by `ω/2`
 """
     function BSE_SC_Helper(χsp_asympt, χch_asympt, χpp_asympt, Nν_full, Nν_shell, n_iω, n_iν, shift)
+        #TODO: Nν_full = 2*Nν_shell+2*n_iν 
         I_core, I_corner, I_t, I_r = shell_indices(Nν_full, Nν_shell)
         I_all = sort(union(I_core, I_corner, I_r, I_t))
         I_asympt = sort(union(I_corner, I_r, I_t))

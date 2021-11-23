@@ -11,18 +11,18 @@ include(joinpath(@__DIR__,"../src/IO.jl"))
 include(joinpath(@__DIR__,"../src/build_chi_asympt.jl"))
 
 
-NBorder = 30
+NBorder = 0
 
 
 println("non-shifted: ")
-gImp_s0, χ₀_s0, χDMFTsp_impr_s0, χDMFTch_impr_s0, helper_s0, U_s0, β_s0, shift_s0 = 
+gImp_s0, χ₀_s0, χDMFTsp_impr_s0, χDMFTch_impr_s0, helper_s0, U_s0, β_s0 = 
         setup(testf, NBorder);
 χDMFTsp_s0 = deepcopy(χDMFTsp_impr_s0)
 χDMFTch_s0 = deepcopy(χDMFTch_impr_s0)
 it_sp, it_ch = 0, 0
 for ωi in 1:size(χDMFTsp_impr_s0,3)
-    global it_sp = improve_χ!(:sp, ωi, view(χDMFTsp_impr_s0,:,:,ωi), view(χ₀_s0,:,ωi), U_s0, β_s0, shift_s0, helper_s0);
-    global it_ch = improve_χ!(:ch, ωi, view(χDMFTch_impr_s0,:,:,ωi), view(χ₀_s0,:,ωi), U_s0, β_s0, shift_s0, helper_s0);
+    global it_sp = improve_χ!(:sp, ωi, view(χDMFTsp_impr_s0,:,:,ωi), view(χ₀_s0,:,ωi), U_s0, β_s0, helper_s0);
+    global it_ch = improve_χ!(:ch, ωi, view(χDMFTch_impr_s0,:,:,ωi), view(χ₀_s0,:,ωi), U_s0, β_s0, helper_s0);
 end
 println("#Iterations: sp: $it_sp, ch: $it_ch")
 #=
