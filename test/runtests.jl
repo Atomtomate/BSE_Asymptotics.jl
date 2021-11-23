@@ -2,7 +2,7 @@ using Test
 using BSE_SC
 using JLD2
 
-include("test_functions.jl")
+include("../src/dbg_tools.jl")
 
 @testset "unit tests" begin
     @testset "IO" begin

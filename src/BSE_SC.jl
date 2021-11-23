@@ -19,6 +19,7 @@ include("ladderDGA_core.jl")
 include("helpers.jl")
 include("IO.jl")
 include("build_chi_asympt.jl")
+include("dbg_tools.jl")
 
 
 end
