@@ -83,61 +83,93 @@ end
 function update_Fsp!(χ::ComplexF64, U::Float64, ωi::Int, h::BSE_SC_Helper)
     i1_l = h.ind1_list
     i2_l = view(h.ind2_list, :, ωi)
-    for i in 1:length(h.I_asympt)
+    for i in 1:length(i1_l)
         i1 = h.I_asympt[i]
         i2 = i1_l[i]
         i3 = i2_l[i]
-        h.Fr[i1] = -U + (U^2)*χ + (U^2/2)*h.χch_asympt[i2] - (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3]  + U*h.λr[i1[1]]  + U*h.λr[i1[2]]
+        h.Fr[i1] = -U + (U^2)*χ + U*h.λr[i1[1]]  + U*h.λr[i1[2]] 
+            + (U^2/2)*h.χch_asympt[i2] - (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3] 
     end
-    #=
-    for i in 1:length(h.I_r)
-        i1 = h.I_r[i]
-        h.Fr[i1] += U*h.λr[i1[1]] + 1*(U^2)*χ
-    end
-    for i in 1:length(h.I_t)
-        i1 = h.I_t[i]
-        h.Fr[i1] += U*h.λr[i1[2]]  + 1*(U^2)*χ
-    end
-    =#
 end
 
 function update_Fch!(χ::ComplexF64, U::Float64, ωi::Int, h::BSE_SC_Helper)
     i1_l = h.ind1_list
     i2_l = view(h.ind2_list, :, ωi)
-    for i in 1:length(h.I_asympt)
+    for i in 1:length(i1_l)
         i1 = h.I_asympt[i]
         i2 = i1_l[i]
         i3 = i2_l[i]
-        h.Fr[i1] = U + (U^2)*χ  - U*h.λr[i1[1]] - U*h.λr[i1[2]] +
-              (U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3]
+        h.Fr[i1] = U + (U^2)*χ  - U*h.λr[i1[1]] - U*h.λr[i1[2]]
+            + (U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3]
     end
-    #=
-    for i in 1:length(h.I_r)
-        i1 = h.I_r[i]
-        h.Fr[i1] = -U*h.λr[i1[1]] #+ 1*(U^2)*χ
-    end
-    for i in 1:length(h.I_t)
-        i1 = h.I_t[i]
-        h.Fr[i1] = -U*h.λr[i1[2]] #+ 1*(U^2)*χ
-    end
-    =#
 end
 
 function update_χ!(λ::AbstractArray{ComplexF64,1}, χ::AbstractArray{ComplexF64,2}, 
         F::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
         β::Float64, indices::AbstractArray{CartesianIndex{2},1})
     for i in indices
-        if i[1] == i[2] 
-            χ[i] = χ₀[i[1]]
-        else
-            χ[i] = 0.0
-        end
+        x[i] = i[1] == i[2] ? χ₀[i[1]] : 0
         χ[i] -= χ₀[i[1]]*F[i]*χ₀[i[2]]/(β^2)
     end
-    #TODO: absorb into sum
     for νk in 1:size(χ,2)
-        λ[νk]  = (sum(χ[:,νk]) / (-χ₀[νk])) + 1
+        λ[νk] = (sum(view(χ,:,νk)) / (-χ₀[νk])) + 1
     end
-    χs = sum(χ)/(β^2)
-    return χs
+    return sum(χ)/(β^2)
+end
+
+function χ₀sum(iνₙ)
+    
+end
+
+function improve_χλ_direct(χsp::AbstractArray{ComplexF64,2}, χch::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64, β::Float64, bs, h::BSE_SC_Helper)
+    i1_l = h.ind1_list
+    i2_l = view(h.ind2_list, :, ωi)
+    χ₀_core = view(χ₀,(h.Nν_shell+1):(length(χ₀)-h.Nν_shell))
+    λsp_core = -sum(χsp,dims=[2])[:,1] ./ χ₀_core .+ 1
+    λch_core =  sum(χch,dims=[2])[:,1] ./ χ₀_core .- 1
+    χsp_core = sum(χsp) /β^2
+    χch_core = sum(χch) /β^2
+    λasym_ch = zeros(eltype(h.χch_asympt), length(h.λr))
+    λasym_sp = zeros(eltype(h.χch_asympt), length(h.λr))
+    #TODO this is inefficient. only loop over necessary indices, only one direction needs to be extended
+    for i in 1:length(i1_l)
+        i1 = h.I_asympt[i]
+        i2 = i1_l[i]
+        i3 = i2_l[i]
+        λasym_ch[i1[1]] += ((U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3])*(-χ₀[i1[2]])/β^2
+        λasym_sp[i1[1]] += ((U^2/2)*h.χch_asympt[i2] -   (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3])*(-χ₀[i1[2]])/β^2
+    end
+    λasym_sp_core = view(λasym_sp,(h.Nν_shell+1):(length(χ₀)-h.Nν_shell))
+    λasym_ch_core = view(λasym_ch,(h.Nν_shell+1):(length(χ₀)-h.Nν_shell))
+    λsp = (λsp_core .+ λasym_sp_core .+ U*bs)/(1+U*bs)
+    λch = (λch_core .+ λasym_ch_core .+ U*bs)/(1-U*bs)
+    λsp_s = -sum((λsp .- 1) .* χ₀_core)/β^2
+    λch_s = -sum((λch .+ 1) .* χ₀_core)/β^2
+    λasym_sp_s = -sum(λasym_sp_core .* χ₀_core)/β^2
+    λasym_ch_s = -sum(λasym_ch_core .* χ₀_core)/β^2
+    χsp = (χsp_core - bs*(1+U*(2*λsp_s-bs)) - U^2 * λasym_sp_s)/(1-U^2 * bs^2)
+    χch = (χch_core - bs*(1+U*(2*λch_s+bs)) - U^2 * λasym_ch_s)/(1-U^2 * bs^2)
+    return χsp, χch, λsp, λch
+end
+
+function χ_direct(χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64, β::Float64, h::BSE_SC_Helper)
+    i1_l = h.ind1_list
+    i2_l = view(h.ind2_list, :, ωi)
+    χconst_ch = zeros(eltype(h.χch_asympt), length(i1_l))
+    χconst_sp = zeros(eltype(h.χch_asympt), length(i1_l))
+    χ₀_asym = χ₀[union(1:10,111:120)]
+    χ₀_core = χ₀[11:110]
+    f1 = 1 / (1 - (U^2 / β^4) * sum(χ₀ .* χ₀))
+    χ_ch = sum(χ₀)/β^2 - sum(χ)/β^2
+    χ_sp = sum(χ₀)/β^2 - sum(χ)/β^2#sum(χ₀_core)/(β) + U*sum(χ₀_asym .* χ₀_asym)/(β^2) - sum(χ)/β^2
+    for i in 1:length(i1_l)
+        i1 = h.I_asympt[i]
+        i2 = i1_l[i]
+        i3 = i2_l[i]
+        χconst_ch[i] = χ₀[i1[1]]*((U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3])*χ₀[i1[2]]
+        χconst_sp[i] = χ₀[i1[1]]*((U^2/2)*h.χch_asympt[i2] -   (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3])*χ₀[i1[2]]
+    end
+    χ_ch -= sum(χconst_ch)/β^4
+    χ_sp -= sum(χconst_sp)/β^4
+    return χ_sp,χ_ch,f1*χ_sp, f1*χ_ch
 end

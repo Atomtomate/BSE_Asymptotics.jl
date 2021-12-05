@@ -11,6 +11,33 @@ function gen_synth(Nf::Int, Nb::Int, Nbor::Int, shift::Int)
     gi, χ₀, χsp, χch, χsp_a, χch_a, χpp_a, U, β, shift 
 end
 
+
+
+function update_Fsp!(χ::ComplexF64, U::Float64, ωi::Int, h)
+    i1_l = h.ind1_list
+    i2_l = view(h.ind2_list, :, ωi)
+    for i in 1:length(h.I_asympt)
+        i1 = h.I_asympt[i]
+        i2 = i1_l[i]
+        i3 = i2_l[i]
+        h.Fr[i1] = -U + U*h.λr[i1[1]]  + U*h.λr[i1[2]] + (U^2)*χ 
+        #+ (U^2/2)*h.χch_asympt[i2] - (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3]  + 
+    end
+end
+
+function update_Fch!(χ::ComplexF64, U::Float64, ωi::Int, h)
+    i1_l = h.ind1_list
+    i2_l = view(h.ind2_list, :, ωi)
+    for i in 1:length(h.I_asympt)
+        i1 = h.I_asympt[i]
+        i2 = i1_l[i]
+        i3 = i2_l[i]
+        h.Fr[i1] = U + (U^2)*χ  - U*h.λr[i1[1]] - U*h.λr[i1[2]] #+
+              #(U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3]
+    end
+end
+
+
 function improve_χ_trace!(type::Symbol, ωi::Int, χr::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
                 U::Float64, β::Float64, h; Nit=200, atol=1e-9)
     f = if type == :sp
