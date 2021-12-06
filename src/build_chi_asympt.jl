@@ -121,7 +121,7 @@ function χ₀sum(iνₙ)
     
 end
 
-function improve_χλ_direct(χsp::AbstractArray{ComplexF64,2}, χch::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64, β::Float64, bs, h::BSE_SC_Helper)
+function improve_χλ_direct(ωi::Int, χsp::AbstractArray{ComplexF64,2}, χch::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64, β::Float64, bs, h::BSE_SC_Helper)
     i1_l = h.ind1_list
     i2_l = view(h.ind2_list, :, ωi)
     χ₀_core = view(χ₀,(h.Nν_shell+1):(length(χ₀)-h.Nν_shell))
