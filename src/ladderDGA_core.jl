@@ -36,3 +36,6 @@ function calc_χ₀(Gνω::OffsetArray, β::Float64, n_iω::Int, n_iν::Int, shi
     end
     return χ₀
 end
+
+iν_array(β::Real, grid::AbstractArray{Int64,1}) = ComplexF64[1.0im*((2.0 *el + 1)* π/β) for el in grid]
+iω_array(β::Real, grid::AbstractArray{Int64,1}) = ComplexF64[1.0im*((2.0 *el)* π/β) for el in grid]
