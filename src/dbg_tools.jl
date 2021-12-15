@@ -11,8 +11,6 @@ function gen_synth(Nf::Int, Nb::Int, Nbor::Int, shift::Int)
     gi, χ₀, χsp, χch, χsp_a, χch_a, χpp_a, U, β, shift 
 end
 
-
-
 function update_Fsp!(χ::ComplexF64, U::Float64, ωi::Int, h)
     i1_l = h.ind1_list
     i2_l = view(h.ind2_list, :, ωi)
@@ -36,7 +34,6 @@ function update_Fch!(χ::ComplexF64, U::Float64, ωi::Int, h)
               #(U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3]
     end
 end
-
 
 function improve_χ_trace!(type::Symbol, ωi::Int, χr::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
                 U::Float64, β::Float64, h; Nit=200, atol=1e-9)
@@ -111,8 +108,7 @@ function improve_χλ_direct(ωn::Int, χsp::AbstractArray{ComplexF64,2}, χch::
     diag_asym_ch_s = -sum(diag_asym_ch .* χ₀)/β^2
     χsp = (χsp_core - bs*(1+2*λsp_s-U*bs) - diag_asym_sp_s)/(1-U^2 * bs^2)
     χch = (χch_core - bs*(1+2*λch_s+U*bs) - diag_asym_ch_s)/(1-U^2 * bs^2)
-    # -sum(diag_asym_sp[ind_core] .* χ₀_core)/β^2, -sum(diag_asym_ch[ind_core] .* χ₀_core)/β^2
-    return χsp, χch, λsp, λch, λsp_core, λch_core#diag_asym_sp_s, diag_asym_ch_s
+    return χsp, χch, λsp, λch, λsp_core, λch_core
 end
 
 function calc_χ₀_shell_sum_old(β::Float64, c2::Float64, c3::Float64, n_iω::Int, n_iν::Int, shift::Int)

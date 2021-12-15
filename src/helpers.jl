@@ -145,20 +145,20 @@ using self consistency. See `BSE_Asym_Helper` for the helper for a direct versio
 `n_iν`: number of positive Fermionic frequencies.
 `shift`: `1` or `0`, depending on whether or not the Fermionic frequencies are shifted by `ω/2`
 """
-    function BSE_Asym_Helper(χsp_asympt, χch_asympt, χpp_asympt, Nν_shell, 
-                             β, n_iω, n_iν, shift)
-        Nν_full = 2*n_iν 
+    function BSE_Asym_Helper(χsp_asympt, χch_asympt, χpp_asympt, Nν_shell, β, n_iω, n_iν, shift)
+        n_iν_f = n_iν + Nν_shell
+        Nν_full = 2*n_iν_f 
         I_core, I_corner, I_t, I_r = shell_indices(Nν_full, Nν_shell)
         I_all = sort(union(I_core, I_corner, I_r, I_t))
         I_asympt = sort(union(I_corner, I_r, I_t))
         ind2_list = OffsetArray(Array{Int, 2}(undef, length(I_asympt), 2*n_iω+1), 1:length(I_asympt), -n_iω:n_iω)
-        i1, i2 = aux_indices(I_asympt, 1, n_iω, n_iν, shift)
+        i1, i2 = aux_indices(I_asympt, 1, n_iω, n_iν_f, shift)
         ind1_list = i1
         for ωi in 1:(2*n_iω+1)
-            i1, i2 = aux_indices(I_asympt, ωi, n_iω, n_iν, shift)
+            i1, i2 = aux_indices(I_asympt, ωi, n_iω, n_iν_f, shift)
             ind2_list[:,ωi-n_iω-1] = i2
         end
-        shell_sum_core = χ₀_shell_sum_core(β, -n_iω:n_iω, n_iν - Nν_shell, shift)
+        shell_sum_core = χ₀_shell_sum_core(β, -n_iω:n_iω, n_iν_f - Nν_shell, shift)
         buffer = Array{ComplexF64,1}(undef, Nν_full)
         new(χsp_asympt, χch_asympt, χpp_asympt, Nν_shell, I_core, I_asympt,
             ind1_list, ind2_list, shift, shell_sum_core, buffer)
