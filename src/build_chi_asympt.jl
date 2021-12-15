@@ -82,7 +82,7 @@ function update_χ!(λ::AbstractArray{ComplexF64,1}, χ::AbstractArray{ComplexF6
     return sum(χ)/(β^2)
 end
 
-function F_diag!(type::Symbol, ωn::Int, χ₀::AbstractArray{ComplexF64,1}, h::BSE_Asym_Helper)
+function F_diag!(type::Symbol, ωn::Int, U::Float64, χ₀::AbstractArray{ComplexF64,1}, h::BSE_Asym_Helper)
     i1_l = h.ind1_list
     i2_l = view(h.ind2_list, :, ωn)
     fill!(h.diag_asym_buffer, 0)
@@ -118,7 +118,7 @@ function calc_χλ(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ�
     χ₀_core = view(χ₀,ind_core)
     λ_core = sum(χ,dims=[2])[:,1] ./ χ₀_core .- 1
     χ_core = sum(χ) /β^2
-    F_diag!(type, ωn, χ₀, h)
+    F_diag!(type, ωn, U, χ₀, h)
     λ = sign(U_int).*(λ_core .+ view(h.diag_asym_buffer, ind_core) .+ U_int*bs)/(1-U_int*bs)
     λ_s = -sum((U .* λ .+ U_int) .* χ₀_core)/β^2
     diag_asym_s = -sum(h.diag_asym_buffer .* χ₀)/β^2
