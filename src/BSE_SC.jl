@@ -8,8 +8,8 @@ Output: χ^{ω}_{r}, λ^{ν,ω}_{r} oder γ^{ν,ω}_{r}
 """
 module BSE_SC
 
-export setup, read_gImp, BSE_SC_Helper
-export calc_χ₀, improve_χ!, improve_χλ_direct
+export setup, read_gImp, BSE_SC_Helper, BSE_Asym_Helper
+export calc_χ₀, improve_χ!, calc_χλ
 
 using LinearAlgebra
 using JLD2
