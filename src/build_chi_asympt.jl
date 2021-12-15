@@ -113,14 +113,12 @@ using knowledge about the asymptotics of the full vertex and tails of the Green'
 """
 function calc_χλ(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64, β::Float64, gf_tail_c2::Float64, gf_tail_c3::Float64, bs_test, h::BSE_Asym_Helper)
     bs = χ₀_shell_sum(h.shell_sum_core, ωn, β, gf_tail_c2, gf_tail_c3)
-    println(bs, " vs ", bs_test)
     U_int = type == :ch ? U : -U
     ind_core = (h.Nν_shell+1):(length(χ₀)-h.Nν_shell)
     χ₀_core = view(χ₀,ind_core)
     λ_core = sum(χ,dims=[2])[:,1] ./ χ₀_core .- 1
     χ_core = sum(χ) /β^2
     F_diag!(type, ωn, χ₀, h)
-    println("\n ccc \n",h.diag_asym_buffer[1:10])
     λ = sign(U_int).*(λ_core .+ view(h.diag_asym_buffer, ind_core) .+ U_int*bs)/(1-U_int*bs)
     λ_s = -sum((U .* λ .+ U_int) .* χ₀_core)/β^2
     diag_asym_s = -sum(h.diag_asym_buffer .* χ₀)/β^2
