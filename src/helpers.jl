@@ -176,13 +176,13 @@ function χ₀_shell_sum_core(β::Float64, ω_ind_grid::AbstractVector{Int}, n_i
     iω_grid = iω_array(β, ω_ind_grid)
     for ωn in ω_ind_grid
         si = shift*trunc(Int,ωn/2)
-        iν_ind_grid = (-n_iν+minimum(ω_ind_grid)-si):(n_iν+maximum(ω_ind_grid)-si-1)
+        iν_ind_grid = (-n_iν-abs(minimum(ω_ind_grid))-si):(n_iν+abs(maximum(ω_ind_grid))-si-1)
         iν_grid = OffsetArray(iν_array(β, iν_ind_grid), iν_ind_grid)
         for νn in (-n_iν-si):(n_iν-si-1)
-            res[ωn,1] += -1/(iν_grid[νn]^1 * iν_grid[νn+ωn]^1)
-            res[ωn,2] +=  1/(iν_grid[νn]^2 * iν_grid[νn+ωn]^1) + 1/(iν_grid[νn]^1 * iν_grid[νn+ωn]^2)
-            res[ωn,3] += -1/(iν_grid[νn]^3 * iν_grid[νn+ωn]^1) - 1/(iν_grid[νn]^1 * iν_grid[νn+ωn]^3)
-            res[ωn,4] += -1/(iν_grid[νn]^2 * iν_grid[νn+ωn]^2)
+            res[ωn,1] += 1/(iν_grid[νn]^1 * iν_grid[νn+ωn]^1)
+            res[ωn,2] += 1/(iν_grid[νn]^2 * iν_grid[νn+ωn]^1) + 1/(iν_grid[νn]^1 * iν_grid[νn+ωn]^2)
+            res[ωn,3] += 1/(iν_grid[νn]^3 * iν_grid[νn+ωn]^1) + 1/(iν_grid[νn]^1 * iν_grid[νn+ωn]^3)
+            res[ωn,4] += 1/(iν_grid[νn]^2 * iν_grid[νn+ωn]^2)
         end
     end
     return res
@@ -196,8 +196,8 @@ This is done by using the known first three tail coefficients of the Green's fun
 expanding around `n → ∞`.
 The core region is precalculated using [`χ₀_shell_sum_core`](@ref).
 """
-function χ₀_shell_sum(core::OffsetArray{ComplexF64,2}, ωn::Int, β::Float64, c1::Float64, c2::Float64)
-    res = (core[ωn,1] + c1*core[ωn,2] + c2*core[ωn,3] + c1^2*core[ωn,4])/β
-    res += ωn == 0  ? -(β/4-c2*β^3/24-c1^2*β^3/48) : ((c1^2-c2)*β/(2*(2*ωn*π/β)^2))
+function χ₀_shell_sum(core::OffsetArray{ComplexF64,2}, ωn::Int, β::Float64, c1::Float64, c2::Float64, c3::Float64)::ComplexF64
+    @inbounds res = (core[ωn,1] + c1*core[ωn,2] + c2*core[ωn,3] + c3*core[ωn,4])/β
+    res += ωn == 0 ? -(-β/4+c2*β^3/48+c3*β^3/24) : ((c3-c2)*β/ωn2)
     return res
 end

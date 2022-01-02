@@ -90,8 +90,8 @@ function improve_χλ_direct(ωn::Int, χsp::AbstractArray{ComplexF64,2}, χch::
     λch_core =  sum(χch,dims=[2])[:,1] ./ χ₀_core .- 1
     χsp_core = sum(χsp) /β^2
     χch_core = sum(χch) /β^2
-    diag_asym_sp = zeros(eltype(h.χch_asympt), length(χ₀))
-    diag_asym_ch = zeros(eltype(h.χch_asympt), length(χ₀))
+    diag_asym_sp = zeros(ComplexF64, length(χ₀))
+    diag_asym_ch = zeros(ComplexF64, length(χ₀))
     #TODO this is inefficient. only loop over necessary indices, only one direction needs to be extended
     for i in 1:length(i1_l)
         i1 = h.I_asympt[i]
