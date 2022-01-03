@@ -181,8 +181,8 @@ function χ₀_shell_sum_core(β::Float64, ω_ind_grid::AbstractVector{Int}, n_i
         for νn in (-n_iν-si):(n_iν-si-1)
             res[ωn,1] += 1/(iν_grid[νn]^1 * iν_grid[νn+ωn]^1)
             res[ωn,2] += 1/(iν_grid[νn]^2 * iν_grid[νn+ωn]^1) + 1/(iν_grid[νn]^1 * iν_grid[νn+ωn]^2)
-            res[ωn,3] += 1/(iν_grid[νn]^3 * iν_grid[νn+ωn]^1) + 1/(iν_grid[νn]^1 * iν_grid[νn+ωn]^3)
-            res[ωn,4] += 1/(iν_grid[νn]^2 * iν_grid[νn+ωn]^2)
+            res[ωn,3] += 1/(iν_grid[νn]^2 * iν_grid[νn+ωn]^2)
+            res[ωn,4] += 1/(iν_grid[νn]^3 * iν_grid[νn+ωn]^1) + 1/(iν_grid[νn]^1 * iν_grid[νn+ωn]^3)
         end
     end
     return res
