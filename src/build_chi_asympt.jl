@@ -111,8 +111,8 @@ end
 Calculates the physical susceptibility `χ` and triangular vertex `λ` in a given channel `type=:sp` or `type=:ch` 
 using knowledge about the asymptotics of the full vertex and tails of the Green's function.
 """
-function calc_χλ(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64, β::Float64, gf_tail_c2::Float64, gf_tail_c3::Float64, h::BSE_Asym_Helper)
-    bs = χ₀_shell_sum(h.shell_sum_core, ωn, β, gf_tail_c2, gf_tail_c3)
+function calc_χλ(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64, β::Float64, c1::Float64, c2::Float64, c3::Float64, h::BSE_Asym_Helper)
+    bs = χ₀_shell_sum(h.shell_sum_core, ωn, β, c1, c2, c3)
     U_int = type == :ch ? U : -U
     ind_core = (h.Nν_shell+1):(length(χ₀)-h.Nν_shell)
     χ₀_core = view(χ₀,ind_core)
