@@ -198,6 +198,6 @@ The core region is precalculated using [`χ₀_shell_sum_core`](@ref).
 """
 function χ₀_shell_sum(core::OffsetArray{ComplexF64,2}, ωn::Int, β::Float64, c1::Float64, c2::Float64, c3::Float64)::ComplexF64
     @inbounds res = (core[ωn,1] + c1*core[ωn,2] + c2*core[ωn,3] + c3*core[ωn,4])/β
-    res += ωn == 0 ? -(-β/4+c2*β^3/48+c3*β^3/24) : ((c3-c2)*β/ωn2)
+    res += ωn == 0 ? -(-β/4+c2*β^3/48+c3*β^3/24) : ((c3-c2)*β/(2*(2*ωn*π/β)^2))
     return res
 end
