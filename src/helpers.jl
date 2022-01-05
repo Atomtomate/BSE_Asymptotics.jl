@@ -189,15 +189,25 @@ function χ₀_shell_sum_core(β::Float64, ω_ind_grid::AbstractVector{Int}, n_i
 end
 
 """
-    χ₀_shell_sum(core::OffsetMatrix{ComplexF64}, ωn::Int, c2::Float64, c3::Float64)
+    χ₀_shell_sum(core::OffsetMatrix{ComplexF64}, ωn::Union{Int,AbstractVector{Int}}, c2::Float64, c3::Float64)
 
 Calculates the asymptotic sum of `∑ₙ,ₗ χ₀(iωₘ,iνₙ,iνₗ')` with `n,l` from `n_iν` to `∞`.
 This is done by using the known first three tail coefficients of the Green's function in `iνₙ` and
 expanding around `n → ∞`.
+`ωn` can either be a single Matsubara index or an array of indices. 
 The core region is precalculated using [`χ₀_shell_sum_core`](@ref).
 """
-function χ₀_shell_sum(core::OffsetArray{ComplexF64,2}, ωn::Int, β::Float64, c1::Float64, c2::Float64, c3::Float64)::ComplexF64
-    @inbounds res = (core[ωn,1] + c1*core[ωn,2] + c2*core[ωn,3] + c3*core[ωn,4])/β
-    res += ωn == 0 ? -(-β/4+c2*β^3/48+c3*β^3/24) : ((c3-c2)*β/(2*(2*ωn*π/β)^2))
+function χ₀_shell_sum(core::OffsetArray{ComplexF64,2}, ωn_in::Int, β::Float64, c1::Float64, c2::Float64, c3::Float64)::ComplexF64
+    @inbounds res = (core[ωn_in,1] + c1*core[ωn_in,2] + c2*core[ωn_in,3] + c3*core[ωn_in,4])/β
+    res += ωn_in == 0 ? -(-β/4+c2*β^3/48+c3*β^3/24) : ((c3-c2)*β/(2*(2*ωn_in*π/β)^2))
+    return res
+end
+
+function χ₀_shell_sum(core::OffsetArray{ComplexF64,2}, ωn_in::AbstractVector{Int}, β::Float64, c1::Float64, c2::Float64, c3::Float64)::ComplexF64
+    res = Array{ComplexF64,1}(undef, length(ωn_in))
+    for (ωi,ωn) in enumerate(ωn_in)
+        @inbounds res[ωi] = (core[ωn,1] + c1*core[ωn,2] + c2*core[ωn,3] + c3*core[ωn,4])/β
+        res += ωn == 0 ? -(-β/4+c2*β^3/48+c3*β^3/24) : ((c3-c2)*β/(2*(2*ωn*π/β)^2))
+    end
     return res
 end
