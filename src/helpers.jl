@@ -114,7 +114,6 @@ Fields
 - **`χsp_asympt`** : ω-asymptotic for the susceptibility in the spin-ph channel
 - **`χch_asympt`** : ω-asymptotic for the susceptibility in the charge-ph channel
 - **`χpp_asympt`** : ω-asymptotic for the susceptibility in the pp channel
-- **`χ₀_shell_sum`** : Asymptotic sum for χ₀ shell
 - **`Nν_shell`**   : Number of Fermionic frequencies used for asymptotic extension.
 - **`I_core`**     : Indices for the core (non-asymptotic) region.
 - **`I_asympt`**   : Indices for the asymptotic region (union of I_corner, I_t, I_r).
@@ -132,7 +131,6 @@ struct BSE_Asym_Helper
     ind1_list::Array{Int,1}
     ind2_list::OffsetArray{Int,2}
     shift::Int
-    shell_sum_core::OffsetArray{ComplexF64,2}
     diag_asym_buffer::Array{ComplexF64,1}
 """
     BSE_Asym_Helper(χsp_asympt, χch_asympt, χpp_asympt, Nν_full, Nν_shell, n_iω, n_iν, shift)
@@ -158,10 +156,9 @@ using self consistency. See `BSE_Asym_Helper` for the helper for a direct versio
             i1, i2 = aux_indices(I_asympt, ωi, n_iω, n_iν_f, shift)
             ind2_list[:,ωi-n_iω-1] = i2
         end
-        shell_sum_core = χ₀_shell_sum_core(β, -n_iω:n_iω, n_iν_f - Nν_shell, shift)
         buffer = Array{ComplexF64,1}(undef, Nν_full)
         new(χsp_asympt, χch_asympt, χpp_asympt, Nν_shell, I_core, I_asympt,
-            ind1_list, ind2_list, shift, shell_sum_core, buffer)
+            ind1_list, ind2_list, shift, buffer)
     end
 end
 
