@@ -133,7 +133,7 @@ end
 function calc_λ0(type::Symbol, λcore::AbstractArray{ComplexF64,2}, ωn::Int, 
                  F::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
                  χ₀_asym::Vector{ComplexF64},
-                 γ::AbstractArray{ComplexF64,2}, χ::AbstractArray{ComplexF64,1}
+                 γ::AbstractArray{ComplexF64,2}, χ::AbstractArray{ComplexF64,1},
                  U::Float64, β::Float64, h::BSE_Asym_Helper)
     s = (type == :ch) ? -1 : +1
     ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
