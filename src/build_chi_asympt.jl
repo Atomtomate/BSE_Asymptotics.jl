@@ -113,6 +113,7 @@ using knowledge about the asymptotics of the full vertex and tails of the Green'
 TODO: optimize
     - bs should only be calculatd once globally (to use for λ0 as well)
     - test for useless allocations
+    - define subroutine version, for map over ωn
 """
 function calc_χλ(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
                  U::Float64, β::Float64, χ₀_asym::ComplexF64, h::BSE_Asym_Helper)
@@ -129,4 +130,26 @@ function calc_χλ(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ�
     return χ_out, λ
 end
 
-function calc_λ0(type::Symbol, ωn::Int, F::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64)
+function calc_λ0(type::Symbol, λcore::AbstractArray{ComplexF64,2}, ωn::Int, 
+                 F::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
+                 χ₀_asym::Vector{ComplexF64},
+                 γ::AbstractArray{ComplexF64,2}, χ::AbstractArray{ComplexF64,1}
+                 U::Float64, β::Float64, h::BSE_Asym_Helper)
+    s = (type == :ch) ? -1 : +1
+    ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
+    Nq = size(χ₀.data,1)
+    Nν = length(ind_core)
+    Nω = size(χ₀.data,3)
+
+    res = Array{ComplexF64,3}(undef, Nq, Nν, Nω)
+    for ωi in 1:Nω
+        ωn = ωi - sP.n_iω - 1
+        λ_asym = (view(γ,:,ωi) .* (1 .+ s*U .* χ[ωi]) ) .- s
+        for qi in 1:Nq
+            λcore = [s*dot(view(χ₀,qi,ind_core,ωi), view(F,νi,:,ωi))/(β^2) for νi in 1:size(F,1)]
+            F_diag!(type, ωn, U, β, χ₀.data[qi,:,ωi], h)
+            res[qi,:,ωi] = λcore + χ₀_asym.*U.*(λ_asym .- 1) .+ view(h.diag_asym_buffer, ind_core)
+        end
+    end
+    return res
+end
