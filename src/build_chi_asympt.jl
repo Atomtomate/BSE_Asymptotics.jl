@@ -106,12 +106,12 @@ function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::Abstrac
 end
 
 """
-    calc_χλ(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64, β::Float64, bs, h::BSE_Asym_Helper)
+    calc_χλ(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64, β::Float64, χ₀_asym::Float64, h::BSE_Asym_Helper)
 
-Calculates the physical susceptibility `χ` and triangular vertex `λ` in a given channel `type=:sp` or `type=:ch` 
-using knowledge about the asymptotics of the full vertex and tails of the Green's function.
+Calculates the physical susceptibility `χ` and triangular vertex `λ` in a given channel `type=:sp` or `type=:ch` using knowledge about the asymptotics of the full vertex and tails of the Green's function.
+`χ₀_asym` is the `ω` dependent asymptotic tail of `χ₀` and can be calculated with  [`χ₀_shell_sum`](@ref).
+
 TODO: optimize
-    - bs should only be calculatd once globally (to use for λ0 as well)
     - test for useless allocations
     - define subroutine version, for map over ωn
 """
@@ -130,6 +130,16 @@ function calc_χλ_impr(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2},
     return χ_out, λ
 end
 
+"""
+    calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
+                 F::AbstractArray{ComplexF64,3}, χ₀::AbstractArray{ComplexF64,3}, 
+                 χ₀_asym::Array{ComplexF64,2}, γ::AbstractArray{ComplexF64,2}, 
+                 χ::AbstractArray{ComplexF64,1},
+                 U::Float64, β::Float64, h::BSE_Asym_Helper)
+    
+Calculates improved version of `λ₀ = χ₀ ⋆ F`.
+TODO: finish documenation and tests.
+"""
 function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
                  F::AbstractArray{ComplexF64,3}, χ₀::AbstractArray{ComplexF64,3}, 
                  χ₀_asym::Array{ComplexF64,2}, γ::AbstractArray{ComplexF64,2}, 
@@ -140,16 +150,16 @@ function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
     Nq = size(χ₀,1)
     Nν = length(ind_core)
     Nω = size(χ₀,3)
-    λ_asym = Array{ComplexF64,1}(undef, Nν)
-    λ_core = Array{ComplexF64,1}(undef, Nν)
+    λasym = Array{ComplexF64,1}(undef, Nν)
+    λcore = Array{ComplexF64,1}(undef, Nν)
     res = Array{ComplexF64,3}(undef, Nq, Nν, Nω)
 
     for (ωi,ωn) in enumerate(ωgrid)
-        λ_asym = (view(γ,:,ωi) .* (1 .+ s*U .* χ[ωi]) ) .- s
+        λasym = (view(γ,:,ωi) .* (1 .+ s*U .* χ[ωi]) ) .- s
         for qi in 1:Nq
             λcore[:] = [s*dot(view(χ₀,qi,ind_core,ωi), view(F,νi,:,ωi))/(β^2) for νi in 1:size(F,1)]
             F_diag!(type, ωn, U, β, χ₀[qi,:,ωi], h)
-            res[qi,:,ωi] = λcore + χ₀_asym[qi,ωi].*U.*(λ_asym .- 1) .+ view(h.diag_asym_buffer, ind_core)
+            res[qi,:,ωi] = λcore + χ₀_asym[qi,ωi].*U.*(λasym .- 1) .+ view(h.diag_asym_buffer, ind_core)
         end
     end
     return res
