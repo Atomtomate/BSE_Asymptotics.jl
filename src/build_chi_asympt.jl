@@ -136,7 +136,7 @@ function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
                  χ::AbstractArray{ComplexF64,1},
                  U::Float64, β::Float64, h::BSE_Asym_Helper)
     s = (type == :ch) ? -1 : +1
-    ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
+    ind_core = (h.Nν_shell+1):(size(χ₀,2)-h.Nν_shell)
     Nq = size(χ₀,1)
     Nν = length(ind_core)
     Nω = size(χ₀,3)
