@@ -145,7 +145,7 @@ function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
     res = Array{ComplexF64,3}(undef, Nq, Nν, Nω)
 
     for (ωi,ωn) in enumerate(ωgrid)
-        λ_asym[:] = (view(γ,:,ωi) .* (1 .+ s*U .* χ[ωi]) ) .- s
+        λ_asym = (view(γ,:,ωi) .* (1 .+ s*U .* χ[ωi]) ) .- s
         for qi in 1:Nq
             λcore[:] = [s*dot(view(χ₀,qi,ind_core,ωi), view(F,νi,:,ωi))/(β^2) for νi in 1:size(F,1)]
             F_diag!(type, ωn, U, β, χ₀[qi,:,ωi], h)
