@@ -136,9 +136,9 @@ function calc_λ0_impr(type::Symbol, F::AbstractArray{ComplexF64,3}, χ₀::Abst
                  U::Float64, β::Float64, h::BSE_Asym_Helper)
     s = (type == :ch) ? -1 : +1
     ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
-    Nq = size(χ₀.data,1)
+    Nq = size(χ₀,1)
     Nν = length(ind_core)
-    Nω = size(χ₀.data,3)
+    Nω = size(χ₀,3)
     λ_asym = Array{ComplexF64,1}(undef, Nν)
     λ_core = Array{ComplexF64,1}(undef, Nν)
     res = Array{ComplexF64,3}(undef, Nq, Nν, Nω)
@@ -148,7 +148,7 @@ function calc_λ0_impr(type::Symbol, F::AbstractArray{ComplexF64,3}, χ₀::Abst
         λ_asym[:] = (view(γ,:,ωi) .* (1 .+ s*U .* χ[ωi]) ) .- s
         for qi in 1:Nq
             λcore[:] = [s*dot(view(χ₀,qi,ind_core,ωi), view(F,νi,:,ωi))/(β^2) for νi in 1:size(F,1)]
-            F_diag!(type, ωn, U, β, χ₀.data[qi,:,ωi], h)
+            F_diag!(type, ωn, U, β, χ₀[qi,:,ωi], h)
             res[qi,:,ωi] = λcore + χ₀_asym[qi,ωi].*U.*(λ_asym .- 1) .+ view(h.diag_asym_buffer, ind_core)
         end
     end
