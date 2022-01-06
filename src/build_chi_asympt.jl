@@ -130,7 +130,8 @@ function calc_χλ_impr(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2},
     return χ_out, λ
 end
 
-function calc_λ0_impr(type::Symbol, F::AbstractArray{ComplexF64,3}, χ₀::AbstractArray{ComplexF64,3}, 
+function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
+                 F::AbstractArray{ComplexF64,3}, χ₀::AbstractArray{ComplexF64,3}, 
                  χ₀_asym::Array{ComplexF64,2}, γ::AbstractArray{ComplexF64,2}, 
                  χ::AbstractArray{ComplexF64,1},
                  U::Float64, β::Float64, h::BSE_Asym_Helper)
@@ -143,8 +144,7 @@ function calc_λ0_impr(type::Symbol, F::AbstractArray{ComplexF64,3}, χ₀::Abst
     λ_core = Array{ComplexF64,1}(undef, Nν)
     res = Array{ComplexF64,3}(undef, Nq, Nν, Nω)
 
-    for ωi in 1:Nω
-        ωn = ωi - sP.n_iω - 1
+    for (ωi,ωn) in enumerate(ωgrid)
         λ_asym[:] = (view(γ,:,ωi) .* (1 .+ s*U .* χ[ωi]) ) .- s
         for qi in 1:Nq
             λcore[:] = [s*dot(view(χ₀,qi,ind_core,ωi), view(F,νi,:,ωi))/(β^2) for νi in 1:size(F,1)]
