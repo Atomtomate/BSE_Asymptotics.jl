@@ -118,15 +118,15 @@ TODO: optimize
 function calc_χλ_impr(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
                  U::Float64, β::Float64, χ₀_asym::ComplexF64, h::BSE_Asym_Helper)
     s = type == :ch ? -1 : 1
-    ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
-    χ₀_core = view(χ₀,ind_core)
-    λ_core = -s*sum(χ,dims=[2])[:,1] ./ χ₀_core .+ s
-    χ_core = sum(χ) /β^2
-    F_diag!(type, ωn, U, β, χ₀, h)
-    λ = (λ_core .- s*view(h.diag_asym_buffer, ind_core) .- U*χ₀_asym)/(1-s*U*χ₀_asym)
-    λ_s = -sum((U .* λ .- s*U) .* χ₀_core)/β^2
-    diag_asym_s = -sum(h.diag_asym_buffer .* χ₀)/β^2
-    χ_out = (χ_core + χ₀_asym*(1+2*λ_s+s*U*χ₀_asym) - diag_asym_s)/(1-U^2 * χ₀_asym^2)
+    @timeit to "1" ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
+    @timeit to "2" χ₀_core = view(χ₀,ind_core)
+    @timeit to "3" λ_core = -s*sum(χ,dims=[2])[:,1] ./ χ₀_core .+ s
+    @timeit to "4" χ_core = sum(χ)/β^2
+    @timeit to "5" F_diag!(type, ωn, U, β, χ₀, h)
+    @timeit to "6" λ = (λ_core .- s*view(h.diag_asym_buffer, ind_core) .- U*χ₀_asym)/(1-s*U*χ₀_asym)
+    @timeit to "6" λ_s = -sum((U .* λ .- s*U) .* χ₀_core)/β^2
+    @timeit to "7" diag_asym_s = -sum(h.diag_asym_buffer .* χ₀)/β^2
+    @timeit to "8" χ_out = (χ_core + χ₀_asym*(1+2*λ_s+s*U*χ₀_asym) - diag_asym_s)/(1-U^2 * χ₀_asym^2)
     return χ_out, λ
 end
 
