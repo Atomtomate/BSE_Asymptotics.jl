@@ -83,15 +83,15 @@ function update_χ!(λ::AbstractArray{ComplexF64,1}, χ::AbstractArray{ComplexF6
 end
 
 function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::AbstractArray{ComplexF64,1}, h::BSE_Asym_Helper)
-    i1_l = h.ind1_list
-    i2_l = view(h.ind2_list, :, ωn)
-    fill!(h.diag_asym_buffer, 0)
-    if type == :sp
+    @timeit to "F1" i1_l = h.ind1_list
+    @timeit to "F2" i2_l = view(h.ind2_list, :, ωn)
+    @timeit to "F3" fill!(h.diag_asym_buffer, 0)
+    @timeit to "F4" if type == :sp
         for i in 1:length(i1_l)
-            i1 = h.I_asympt[i]
-            i2 = i1_l[i]
-            i3 = i2_l[i]
-            h.diag_asym_buffer[i1[1]] += ((U^2/2)*h.χch_asympt[i2] -   (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3])*(-χ₀[i1[2]])/β^2
+            @timeit to "F5" i1 = h.I_asympt[i]
+            @timeit to "F6" i2 = i1_l[i]
+            @timeit to "F7" i3 = i2_l[i]
+            @timeit to "F8" h.diag_asym_buffer[i1[1]] += ((U^2/2)*h.χch_asympt[i2] -   (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3])*(-χ₀[i1[2]])/β^2
         end
     elseif type == :ch
         for i in 1:length(i1_l)
