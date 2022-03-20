@@ -125,6 +125,9 @@ struct BSE_Asym_Helper
     χsp_asympt::Array{ComplexF64,1}
     χch_asympt::Array{ComplexF64,1}
     χpp_asympt::Array{ComplexF64,1}
+    χsp_asym_b::Array{ComplexF64,2}
+    χch_asym_b::Array{ComplexF64,2}
+    #χpp_asympt::Array{ComplexF64,1}
     Nν_shell::Int
     I_core::Array{CartesianIndex{2},1}
     I_asympt::Array{CartesianIndex{2},1}
@@ -151,13 +154,22 @@ using self consistency. See `BSE_Asym_Helper` for the helper for a direct versio
         I_asympt = sort(union(I_corner, I_r, I_t))
         ind2_list = OffsetArray(Array{Int, 2}(undef, length(I_asympt), 2*n_iω+1), 1:length(I_asympt), -n_iω:n_iω)
         i1, i2 = aux_indices(I_asympt, 1, n_iω, n_iν_f, shift)
-        ind1_list = i1
+        χsp_asym_b = OffsetArray(zeros(ComplexF64, size(ind2_list)), 1:length(I_asympt), -n_iω:n_iω)
+        χch_asym_b = OffsetArray(zeros(ComplexF64, size(ind2_list)), 1:length(I_asympt), -n_iω:n_iω)
         for ωi in 1:(2*n_iω+1)
-            i1, i2 = aux_indices(I_asympt, ωi, n_iω, n_iν_f, shift)
+            i1l, i2l = aux_indices(I_asympt, ωi, n_iω, n_iν_f, shift)
             ind2_list[:,ωi-n_iω-1] = i2
+            for i in 1:length(i1l)
+                i1 = I_asympt[i]
+                i2 = i1l[i]
+                i3 = i2l[i]
+                χsp_asym_b[i1[1],ωi-n_iω-1] = -((U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3])/β^2
+                χch_asym_b[i1[1],ωi-n_iω-1] = -((U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3])/β^2
+            end
         end
+
         buffer = Array{ComplexF64,1}(undef, Nν_full)
-        new(χsp_asympt, χch_asympt, χpp_asympt, Nν_shell, I_core, I_asympt,
+        new(χsp_asympt, χch_asympt, χpp_asympt, χsp_asym_b, χch_asym_b, Nν_shell, I_core, I_asympt,
             ind1_list, ind2_list, shift, buffer)
     end
 end
