@@ -169,6 +169,8 @@ using self consistency. See `BSE_Asym_Helper` for the helper for a direct versio
         end
 
         buffer = Array{ComplexF64,1}(undef, Nν_full)
+        println(typeof(χsp_asympt), χtypeof(ch_asympt), typeof(χpp_asympt), typeof(χsp_asym_b), typeof(χch_asym_b), typeof(Nν_shell), typeof(I_core), typeof(I_asympt),
+                typeof(i1), typeof(ind2_list), shift, buffer)
         new(χsp_asympt, χch_asympt, χpp_asympt, χsp_asym_b, χch_asym_b, Nν_shell, I_core, I_asympt,
             i1, ind2_list, shift, buffer)
     end
