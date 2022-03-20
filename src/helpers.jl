@@ -153,7 +153,7 @@ using self consistency. See `BSE_Asym_Helper` for the helper for a direct versio
         I_all = sort(union(I_core, I_corner, I_r, I_t))
         I_asympt = sort(union(I_corner, I_r, I_t))
         ind2_list = OffsetArray(Array{Int, 2}(undef, length(I_asympt), 2*n_iω+1), 1:length(I_asympt), -n_iω:n_iω)
-        i1, i2 = aux_indices(I_asympt, 1, n_iω, n_iν_f, shift)
+        i1l, i2l = aux_indices(I_asympt, 1, n_iω, n_iν_f, shift)
         χsp_asym_b = OffsetArray(zeros(ComplexF64, size(ind2_list)), 1:length(I_asympt), -n_iω:n_iω)
         χch_asym_b = OffsetArray(zeros(ComplexF64, size(ind2_list)), 1:length(I_asympt), -n_iω:n_iω)
         for ωi in 1:(2*n_iω+1)
@@ -169,10 +169,10 @@ using self consistency. See `BSE_Asym_Helper` for the helper for a direct versio
         end
 
         buffer = Array{ComplexF64,1}(undef, Nν_full)
-        println(typeof(χsp_asympt), typeof(χch_asympt), typeof(χpp_asympt), typeof(χsp_asym_b), typeof(χch_asym_b), typeof(Nν_shell), typeof(I_core), typeof(I_asympt),
+        #println(typeof(χsp_asympt), typeof(χch_asympt), typeof(χpp_asympt), typeof(χsp_asym_b), typeof(χch_asym_b), typeof(Nν_shell), typeof(I_core), typeof(I_asympt),
                 typeof(i1), typeof(ind2_list), shift, buffer)
         new(χsp_asympt, χch_asympt, χpp_asympt, χsp_asym_b, χch_asym_b, Nν_shell, I_core, I_asympt,
-            i1, ind2_list, shift, buffer)
+            i1l, ind2_list, shift, buffer)
     end
 end
 
