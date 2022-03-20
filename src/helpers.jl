@@ -170,7 +170,7 @@ using self consistency. See `BSE_Asym_Helper` for the helper for a direct versio
 
         buffer = Array{ComplexF64,1}(undef, Nν_full)
         #println(typeof(χsp_asympt), typeof(χch_asympt), typeof(χpp_asympt), typeof(χsp_asym_b), typeof(χch_asym_b), typeof(Nν_shell), typeof(I_core), typeof(I_asympt),
-                typeof(i1), typeof(ind2_list), shift, buffer)
+        #        typeof(i1), typeof(ind2_list), shift, buffer)
         new(χsp_asympt, χch_asympt, χpp_asympt, χsp_asym_b, χch_asym_b, Nν_shell, I_core, I_asympt,
             i1l, ind2_list, shift, buffer)
     end
