@@ -85,7 +85,7 @@ end
 function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::AbstractArray{ComplexF64,1}, h::BSE_Asym_Helper)
     i1_l = h.ind1_list
     i2_l = view(h.ind2_list, :, ωn)
-    tmp = similar(χ₀, length(I_asympt))
+    tmp = similar(χ₀, length(h.I_asympt))
     fill!(h.diag_asym_buffer, 0)
     if type == :sp
         @timeit "sp loop" for i in 1:length(i1_l)
