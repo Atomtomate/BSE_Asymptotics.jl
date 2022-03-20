@@ -94,7 +94,7 @@ function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::Abstrac
             i3 = i2_l[i]
             h.diag_asym_buffer[i1[1]] += ((U^2/2)*h.χch_asympt[i2] - (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3])*(-χ₀[i1[2]])/β^2
         end
-        @timeit "sp direct" tmp[:] = view(h.χsp_asym_b,:,ωn) .* (view(χ₀,h.I_asympt))
+        @timeit "sp direct" tmp[:] .= view(h.χsp_asym_b,:,ωn) .* (view(χ₀,h.I_asympt))
         println(all(tmp .≈ h.diag_asym_buffer))
     elseif type == :ch
         for i in 1:length(i1_l)

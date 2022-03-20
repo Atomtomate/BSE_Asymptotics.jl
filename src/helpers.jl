@@ -158,7 +158,7 @@ using self consistency. See `BSE_Asym_Helper` for the helper for a direct versio
         χch_asym_b = OffsetArray(zeros(ComplexF64, size(ind2_list)), 1:length(I_asympt), -n_iω:n_iω)
         for ωi in 1:(2*n_iω+1)
             i1l, i2l = aux_indices(I_asympt, ωi, n_iω, n_iν_f, shift)
-            ind2_list[:,ωi-n_iω-1] = i2
+            ind2_list[:,ωi-n_iω-1] = i2l
             for i in 1:length(i1l)
                 i1 = I_asympt[i]
                 i2 = i1l[i]
