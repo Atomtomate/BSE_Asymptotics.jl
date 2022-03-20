@@ -125,8 +125,8 @@ struct BSE_Asym_Helper
     χsp_asympt::Array{ComplexF64,1}
     χch_asympt::Array{ComplexF64,1}
     χpp_asympt::Array{ComplexF64,1}
-    χsp_asym_b::Array{ComplexF64,2}
-    χch_asym_b::Array{ComplexF64,2}
+    χsp_asym_b::OffsetArray{ComplexF64,2}
+    χch_asym_b::OffsetArray{ComplexF64,2}
     #χpp_asympt::Array{ComplexF64,1}
     Nν_shell::Int
     I_core::Array{CartesianIndex{2},1}
