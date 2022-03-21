@@ -85,7 +85,7 @@ end
 function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::AbstractArray{ComplexF64,1}, h::BSE_Asym_Helper)
     i1_l = h.ind1_list
     i2_l = view(h.ind2_list, :, ωn)
-    tmp = similar(χ₀, length(h.I_asympt))
+    tmp = similar(χ₀, length(h.diag_asym_buffer))
     fill!(h.diag_asym_buffer, 0)
     tw = collect(map(i1 -> i1[2], h.I_asympt))
     if type == :sp
@@ -95,7 +95,11 @@ function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::Abstrac
             i3 = i2_l[i]
             h.diag_asym_buffer[i1[1]] += ((U^2/2)*h.χch_asympt[i2] - (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3])*(-χ₀[i1[2]])/β^2
         end
-        @timeit "sp direct" tmp[:] .= view(h.χsp_asym_b,:,ωn) .* (view(χ₀,tw))
+        
+        @timeit "sp direct" for i in 1:length(i1_l)
+            i1 = h.I_asympt[i]
+            tmp[i1[1]] += view(h.χsp_asym_b,i,ωn) .* χ₀[i1[2]]
+        end
         println(all(tmp .≈ h.diag_asym_buffer))
     elseif type == :ch
         for i in 1:length(i1_l)
