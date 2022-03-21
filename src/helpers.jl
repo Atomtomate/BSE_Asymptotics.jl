@@ -156,6 +156,10 @@ using self consistency. See `BSE_Asym_Helper` for the helper for a direct versio
         i1l, i2l = aux_indices(I_asympt, 1, n_iω, n_iν_f, shift)
         χsp_asym_b = OffsetArray(zeros(ComplexF64, size(ind2_list)), 1:length(I_asympt), -n_iω:n_iω)
         χch_asym_b = OffsetArray(zeros(ComplexF64, size(ind2_list)), 1:length(I_asympt), -n_iω:n_iω)
+
+        #ind1_set = sort(unique(i1l))
+        #χsp_asym_b = OffsetArray(zeros(ComplexF64, length(ind1_set), 2*n_iω+1), ind1_set, -n_iω:n_iω)
+        #χch_asym_b = OffsetArray(zeros(ComplexF64, length(ind1_set), 2*n_iω+1), ind1_set, -n_iω:n_iω)
         for ωi in 1:(2*n_iω+1)
             i1l, i2l = aux_indices(I_asympt, ωi, n_iω, n_iν_f, shift)
             ind2_list[:,ωi-n_iω-1] = i2l
@@ -163,8 +167,8 @@ using self consistency. See `BSE_Asym_Helper` for the helper for a direct versio
                 i1 = I_asympt[i]
                 i2 = i1l[i]
                 i3 = i2l[i]
-                χsp_asym_b[i1[1],ωi-n_iω-1] = -((U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3])/β^2
-                χch_asym_b[i1[1],ωi-n_iω-1] = -((U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3])/β^2
+                χsp_asym_b[i,ωi-n_iω-1] = -((U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3])/β^2
+                χch_asym_b[i,ωi-n_iω-1] = -((U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3])/β^2
             end
         end
 
