@@ -145,7 +145,7 @@ function calc_χλ_impr!(λ::Array{ComplexF64,1}, type::Symbol, ωn::Int, χ::Ab
     λ_s = -sum((U .* λ .- s*U) .* χ₀_core)/β^2
     diag_asym_s = -sum(h.diag_asym_buffer .* χ₀)/β^2
     χ_out = (χ_core + χ₀_asym*(1+2*λ_s+s*U*χ₀_asym) - diag_asym_s)/(1-U^2 * χ₀_asym^2)
-    return χ_out, λ
+    return χ_out
 end
 
 
