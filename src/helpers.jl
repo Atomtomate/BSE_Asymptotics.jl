@@ -1,3 +1,6 @@
+abstract type BSE_Asym_Helpers end
+abstract type BSE_SC_Helpers end
+
 """
     shell_indices(Nν_full::Int, Nν_shell::Int)
 
@@ -56,7 +59,7 @@ Fields
 - **`ind2_list`**  : ν+ν'+ω indices in `χpp_asympt` for all `I_asympt`
 - **`shift`**      : `1` or `0` depending on wheter the ν-frequencies are shfited by `-ω/2`
 """
-struct BSE_SC_Helper
+struct BSE_SC_Helper <: BSE_SC_Helpers
     χsp_asympt::Array{ComplexF64,1}
     χch_asympt::Array{ComplexF64,1}
     χpp_asympt::Array{ComplexF64,1}
@@ -76,7 +79,7 @@ struct BSE_SC_Helper
     BSE_SC_Helper(χsp_asympt, χch_asympt, χpp_asympt, Nν_full, Nν_shell, n_iω, n_iν, shift)
 
 Generates helper struct, for the efficient computation of the susceptibility asymptotics,
-using self consistency. See `BSE_Asym_Helper` for the helper for a direct version.
+using self consistency. [`BSE_Asym_Helper`](@ref) is a helper for a direct asymptotics version.
 `Nν_full`: number of Fermionic frequencies in ν direction for each Bosonic frequency.
 `Nν_shell`: number of Fermionic frequencies in ν direction for each Bosonic frequency
 `n_iω`: number of positive Bosonic frequencies.
@@ -106,8 +109,8 @@ end
 """
     BSE_Asym_Helper
 
-Helper struct for efficient solution of the self consistency. For an example see
-also [`setup`](@ref).
+Helper struct for efficient improvement of the result after the inversion in the Bethe Salpeter equation. 
+For an example see also [`setup`](@ref).
 
 Fields
 -------------
@@ -121,13 +124,10 @@ Fields
 - **`ind2_list`**  : ν+ν'+ω indices in `χpp_asympt` for all `I_asympt`
 - **`shift`**      : `1` or `0` depending on wheter the ν-frequencies are shfited by `-ω/2`
 """
-struct BSE_Asym_Helper
+struct BSE_Asym_Helper <: BSE_Asym_Helpers
     χsp_asympt::Array{ComplexF64,1}
     χch_asympt::Array{ComplexF64,1}
     χpp_asympt::Array{ComplexF64,1}
-    χsp_asym_b::OffsetArray{ComplexF64,2}
-    χch_asym_b::OffsetArray{ComplexF64,2}
-    #χpp_asympt::Array{ComplexF64,1}
     Nν_shell::Int
     I_core::Array{CartesianIndex{2},1}
     I_asympt::Array{CartesianIndex{2},1}
@@ -139,7 +139,7 @@ struct BSE_Asym_Helper
     BSE_Asym_Helper(χsp_asympt, χch_asympt, χpp_asympt, Nν_full, Nν_shell, n_iω, n_iν, shift)
 
 Generates helper struct, for the efficient computation of the susceptibility asymptotics,
-using self consistency. See `BSE_Asym_Helper` for the helper for a direct version.
+using direct asymptotics. See `BSE_Asym_Helper` for the helper for a direct version.
 `Nν_full`: number of Fermionic frequencies in ν direction for each Bosonic frequency.
 `Nν_shell`: number of Fermionic frequencies in ν direction for each Bosonic frequency
 `n_iω`: number of positive Bosonic frequencies.
@@ -154,12 +154,6 @@ using self consistency. See `BSE_Asym_Helper` for the helper for a direct versio
         I_asympt = sort(union(I_corner, I_r, I_t))
         ind2_list = OffsetArray(Array{Int, 2}(undef, length(I_asympt), 2*n_iω+1), 1:length(I_asympt), -n_iω:n_iω)
         i1l, i2l = aux_indices(I_asympt, 1, n_iω, n_iν_f, shift)
-        χsp_asym_b = OffsetArray(zeros(ComplexF64, size(ind2_list)), 1:length(I_asympt), -n_iω:n_iω)
-        χch_asym_b = OffsetArray(zeros(ComplexF64, size(ind2_list)), 1:length(I_asympt), -n_iω:n_iω)
-
-        #ind1_set = sort(unique(i1l))
-        #χsp_asym_b = OffsetArray(zeros(ComplexF64, length(ind1_set), 2*n_iω+1), ind1_set, -n_iω:n_iω)
-        #χch_asym_b = OffsetArray(zeros(ComplexF64, length(ind1_set), 2*n_iω+1), ind1_set, -n_iω:n_iω)
         for ωi in 1:(2*n_iω+1)
             i1l, i2l = aux_indices(I_asympt, ωi, n_iω, n_iν_f, shift)
             ind2_list[:,ωi-n_iω-1] = i2l
@@ -167,16 +161,92 @@ using self consistency. See `BSE_Asym_Helper` for the helper for a direct versio
                 i1 = I_asympt[i]
                 i2 = i1l[i]
                 i3 = i2l[i]
-                χsp_asym_b[i,ωi-n_iω-1] = -((U^2/2)*χch_asympt[i2] - (U^2/2)*χsp_asympt[i2] + (U^2)*χpp_asympt[i3])/β^2
-                χch_asym_b[i,ωi-n_iω-1] = -((U^2/2)*χch_asympt[i2] + 3*(U^2/2)*χsp_asympt[i2] - (U^2)*χpp_asympt[i3])/β^2
+            end
+        end
+
+        buffer = Array{ComplexF64,1}(undef, Nν_full)
+        new(χsp_asympt, χch_asympt, χpp_asympt, Nν_shell, I_core, I_asympt,
+            i1l, ind2_list, shift, buffer)
+    end
+end
+
+"""
+    BSE_Asym_Helper_Approx1
+
+Helper struct for efficient improvement of the result after the inversion in the Bethe Salpeter equation. 
+This approximates the results by neglecting the partice-particle channel, greatly imrpoving performance.
+In rare cases where the particle-particle susceptibility contributes significantly use [`BSE_Asym_Helper`](@ref) instead.
+
+Fields
+-------------
+- **`Nν_shell`**   : Number of Fermionic frequencies used for asymptotic extension.
+- **`Fsp_kernel`** : Approximate diagonal contribution from physical susceptibilities for the spin channel
+- **`Fch_kernel`** : Approximate diagonal contribution from physical susceptibilities for the charge channel
+"""
+struct BSE_Asym_Helper_Approx1 <: BSE_Asym_Helpers
+    Nν_shell::Int
+    Fsp_kernel::Matrix{ComplexF64}
+    Fch_kernel::Matrix{ComplexF64}
+    diag_asym_buffer::Array{ComplexF64,1}
+"""
+    BSE_Asym_Helper_Approx1(χsp_asympt, χch_asympt, χpp_asympt, Nν_full, Nν_shell, n_iω, n_iν, shift)
+
+Generates helper struct, for the efficient computation of the susceptibility asymptotics,
+using direct asymptotics. 
+Note that this approximation disregards the `χpp_asympt` input!
+`Nν_full`: number of Fermionic frequencies in ν direction for each Bosonic frequency.
+`Nν_shell`: number of Fermionic frequencies in ν direction for each Bosonic frequency
+`n_iω`: number of positive Bosonic frequencies.
+`n_iν`: number of positive Fermionic frequencies.
+`shift`: `1` or `0`, depending on whether or not the Fermionic frequencies are shifted by `ω/2`
+"""
+    function BSE_Asym_Helper_Approx1(χsp_asympt, χch_asympt, χpp_asympt, Nν_shell, U, β, n_iω, n_iν, shift)
+        n_iν_f = n_iν + Nν_shell
+        Nν_full = 2*n_iν_f 
+        I_core, I_corner, I_t, I_r = shell_indices(Nν_full, Nν_shell)
+        I_all = sort(union(I_core, I_corner, I_r, I_t))
+        I_asympt = sort(union(I_corner, I_r, I_t))
+        ind2_list = OffsetArray(Array{Int, 2}(undef, length(I_asympt), 2*n_iω+1), 1:length(I_asympt), -n_iω:n_iω)
+        i1l, i2l = aux_indices(I_asympt, 1, n_iω, n_iν_f, shift)
+        Fsp_kernel = Matrix{ComplexF64}(undef, 2*n_iν, 2*n_iν)
+        Fch_kernel = Matrix{ComplexF64}(undef, 2*n_iν, 2*n_iν)
+
+        for ωi in 1:(2*n_iω+1)
+            i1l, i2l = aux_indices(I_asympt, ωi, n_iω, n_iν_f, shift)
+            for i in 1:length(i1l)
+                i1 = I_asympt[i]
+                i2 = i1l[i]
             end
         end
 
         buffer = Array{ComplexF64,1}(undef, Nν_full)
         #println(typeof(χsp_asympt), typeof(χch_asympt), typeof(χpp_asympt), typeof(χsp_asym_b), typeof(χch_asym_b), typeof(Nν_shell), typeof(I_core), typeof(I_asympt),
-        #        typeof(i1), typeof(ind2_list), shift, buffer)
-        new(χsp_asympt, χch_asympt, χpp_asympt, χsp_asym_b, χch_asym_b, Nν_shell, I_core, I_asympt,
-            i1l, ind2_list, shift, buffer)
+        new(Nν_shell, Fsp_kernel, Fch_kernel, buffer)
+    end
+end
+
+"""
+    BSE_Asym_Helper_Approx2
+
+Helper struct for efficient improvement of the result after the inversion in the Bethe Salpeter equation. 
+This approximates the results by neglecting all offdiagonal terms greatly imrpoving performance and removing dependence on the physical susceptibilities.
+
+Fields
+-------------
+- **`Nν_shell`**   : Number of Fermionic frequencies used for asymptotic extension.
+"""
+struct BSE_Asym_Helper_Approx2 <: BSE_Asym_Helpers
+    Nν_shell::Int
+"""
+    BSE_Asym_Helper_Approx2(Nν_full, Nν_shell, n_iω, n_iν, shift)
+
+Generates helper struct, for the efficient computation of the susceptibility asymptotics,
+using direct asymptotics. 
+Note that this approximation disregards the `χpp_asympt` input!
+`Nν_shell`: number of Fermionic frequencies in ν direction for each Bosonic frequency
+"""
+    function BSE_Asym_Helper_Approx2(Nν_shell)
+        new(Nν_shell)
     end
 end
 

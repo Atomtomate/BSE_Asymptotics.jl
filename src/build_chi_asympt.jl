@@ -105,19 +105,19 @@ function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::Abstrac
     end
 end
 
+F_diag!(type, ωn, U, β, χ₀, h::BSE_Asym_Helper_Approx2) = nothing
+
+
 """
     calc_χλ(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64, β::Float64, χ₀_asym::Float64, h::BSE_Asym_Helper)
 
 Calculates the physical susceptibility `χ` and triangular vertex `λ` in a given channel `type=:sp` or `type=:ch` using knowledge about the asymptotics of the full vertex and tails of the Green's function.
 `χ₀_asym` is the `ω` dependent asymptotic tail of `χ₀` and can be calculated with  [`χ₀_shell_sum`](@ref).
 
-TODO: optimize
-    - test for useless allocations
-    - define subroutine version, for map over ωn
-    - fft for F_diag?
+TODO: refactor code duplications
 """
 function calc_χλ_impr(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
-                 U::Float64, β::Float64, χ₀_asym::ComplexF64, h::BSE_Asym_Helper)
+                 U::Float64, β::Float64, χ₀_asym::ComplexF64, h::HT) where  HT <: BSE_Asym_Helpers
     λ = Array{eltype(χ),1}(undef, size(χ, 1))
     calc_χλ_impr!(λ, type, ωn, χ, χ₀, U, β, χ₀_asym, h)
     return χ_out, λ
@@ -135,6 +135,19 @@ function calc_χλ_impr!(λ::Array{ComplexF64,1}, type::Symbol, ωn::Int, χ::Ab
     λ_s = -sum((U .* λ .- s*U) .* χ₀_core)/β^2
     diag_asym_s = -sum(h.diag_asym_buffer .* χ₀)/β^2
     χ_out = (χ_core + χ₀_asym*(1+2*λ_s+s*U*χ₀_asym) - diag_asym_s)/(1-U^2 * χ₀_asym^2)
+    return χ_out
+end
+
+function calc_χλ_impr!(λ::Array{ComplexF64,1}, type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
+                 U::Float64, β::Float64, χ₀_asym::ComplexF64, h::BSE_Asym_Helper_Approx2)
+    s = type == :ch ? -1 : 1
+    ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
+    χ₀_core = view(χ₀,ind_core)
+    λ[:] = -s*sum(χ,dims=[2])[:,1] ./ χ₀_core .+ s
+    χ_core = sum(χ)/β^2
+    λ[:] = (λ .- U*χ₀_asym)/(1-s*U*χ₀_asym)
+    λ_s = -sum((U .* λ .- s*U) .* χ₀_core)/β^2
+    χ_out = (χ_core + χ₀_asym*(1+2*λ_s+s*U*χ₀_asym))/(1-U^2 * χ₀_asym^2)
     return χ_out
 end
 
