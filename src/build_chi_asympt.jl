@@ -89,7 +89,7 @@ function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::Abstrac
     fill!(h.diag_asym_buffer, 0)
     tw = collect(map(i1 -> i1[2], h.I_asympt))
     if type == :sp
-        @timeit to "sp loop" for i in 1:length(i1_l)
+        for i in 1:length(i1_l)
             i1 = h.I_asympt[i]
             i2 = i1_l[i]
             i3 = i2_l[i]
@@ -97,13 +97,12 @@ function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::Abstrac
         end
         
         #TODO: do this convolution with fft?
-
-        v = view(h.χsp_asym_b,:,ωn)
-        @timeit to "sp direct" for i in 1:length(i1_l)
-            i1 = h.I_asympt[i]
-            h.diag_asym_buffer[i1[1]] += v[i] .* χ₀[i1[2]]
-        end
-        any(abs.(tmp .- h.diag_asym_buffer) .> 1e-8) && println(ωn)
+        #v = view(h.χsp_asym_b,:,ωn)
+        #@timeit to "sp direct" for i in 1:length(i1_l)
+        #    i1 = h.I_asympt[i]
+        #    h.diag_asym_buffer[i1[1]] += v[i] .* χ₀[i1[2]]
+        #end
+        #any(abs.(tmp .- h.diag_asym_buffer) .> 1e-8) && println(ωn)
     elseif type == :ch
         for i in 1:length(i1_l)
             i1 = h.I_asympt[i]
@@ -125,21 +124,30 @@ Calculates the physical susceptibility `χ` and triangular vertex `λ` in a give
 TODO: optimize
     - test for useless allocations
     - define subroutine version, for map over ωn
+    - fft for F_diag?
 """
 function calc_χλ_impr(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
                  U::Float64, β::Float64, χ₀_asym::ComplexF64, h::BSE_Asym_Helper)
-    s = type == :ch ? -1 : 1
-    @timeit to "1" ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
-    @timeit to "2" χ₀_core = view(χ₀,ind_core)
-    @timeit to "3" λ_core = -s*sum(χ,dims=[2])[:,1] ./ χ₀_core .+ s
-    @timeit to "4" χ_core = sum(χ)/β^2
-    @timeit to "5" F_diag!(type, ωn, U, β, χ₀, h)
-    @timeit to "6" λ = (λ_core .- s*view(h.diag_asym_buffer, ind_core) .- U*χ₀_asym)/(1-s*U*χ₀_asym)
-    @timeit to "6" λ_s = -sum((U .* λ .- s*U) .* χ₀_core)/β^2
-    @timeit to "7" diag_asym_s = -sum(h.diag_asym_buffer .* χ₀)/β^2
-    @timeit to "8" χ_out = (χ_core + χ₀_asym*(1+2*λ_s+s*U*χ₀_asym) - diag_asym_s)/(1-U^2 * χ₀_asym^2)
+    λ = Array{eltype(χ),1}(undef, size(χ, 1))
+    calc_χλ_impr!(λ, type, ωn, χ, χ₀, U, β, χ₀_asym, h)
     return χ_out, λ
 end
+
+function calc_χλ_impr!(λ::Array{ComplexF64,1}, type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
+                 U::Float64, β::Float64, χ₀_asym::ComplexF64, h::BSE_Asym_Helper)
+    s = type == :ch ? -1 : 1
+    ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
+    χ₀_core = view(χ₀,ind_core)
+    λ[:] = -s*sum(χ,dims=[2])[:,1] ./ χ₀_core .+ s
+    χ_core = sum(χ)/β^2
+    F_diag!(type, ωn, U, β, χ₀, h)
+    λ[:] = (λ .- s*view(h.diag_asym_buffer, ind_core) .- U*χ₀_asym)/(1-s*U*χ₀_asym)
+    λ_s = -sum((U .* λ .- s*U) .* χ₀_core)/β^2
+    diag_asym_s = -sum(h.diag_asym_buffer .* χ₀)/β^2
+    χ_out = (χ_core + χ₀_asym*(1+2*λ_s+s*U*χ₀_asym) - diag_asym_s)/(1-U^2 * χ₀_asym^2)
+    return χ_out, λ
+end
+
 
 """
     calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
