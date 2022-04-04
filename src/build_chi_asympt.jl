@@ -166,7 +166,7 @@ function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
                  F::AbstractArray{ComplexF64,3}, χ₀::AbstractArray{ComplexF64,3}, 
                  χ₀_asym::Array{ComplexF64,2}, γ::AbstractArray{ComplexF64,2}, 
                  χ::AbstractArray{ComplexF64,1},
-                 U::Float64, β::Float64, h::BSE_Asym_Helper)
+                 U::Float64, β::Float64, h)
     s = (type == :ch) ? -1 : +1
     ind_core = (h.Nν_shell+1):(size(χ₀,2)-h.Nν_shell)
     Nq = size(χ₀,1)
@@ -180,8 +180,13 @@ function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
         λasym = -(view(γ,:,ωi) .* (1 .+ s*U .* χ[ωi]) ) .+ 1
         for qi in 1:Nq
             λcore[:] = [s*dot(view(χ₀,qi,ind_core,ωi), view(F,νi,:,ωi))/(β^2) for νi in 1:size(F,1)]
-            F_diag!(type, ωn, U, β, χ₀[qi,:,ωi], h)
-            res[qi,:,ωi] = λcore + χ₀_asym[qi,ωi].*U.*(λasym .- 1) .+ view(h.diag_asym_buffer, ind_core)
+            diag_term = if hasfield(h, :diag_asym_buffer)
+                F_diag!(type, ωn, U, β, χ₀[qi,:,ωi], h)
+                view(h.diag_asym_buffer, ind_core)
+            else
+                0.0
+            end
+            res[qi,:,ωi] = λcore + χ₀_asym[qi,ωi].*U.*(λasym .- 1) .+ diag_term
         end
     end
     return res
