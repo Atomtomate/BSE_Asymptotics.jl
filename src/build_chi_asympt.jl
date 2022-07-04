@@ -176,6 +176,12 @@ function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
     λcore = Array{ComplexF64,1}(undef, Nν)
     res = Array{ComplexF64,3}(undef, Nq, Nν, Nω)
 
+    diag_term = if !diag_zero && hasfield(typeof(h), :diag_asym_buffer)
+        println("DBG: using diagonal terms in λ₀")
+    else
+        println("DBG: NOT using diagonal terms in λ₀")
+    end
+
     for (ωi,ωn) in enumerate(ωgrid)
         λasym = -(view(γ,:,ωi) .* (1 .+ s*U .* χ[ωi]) ) .+ 1
         for qi in 1:Nq
