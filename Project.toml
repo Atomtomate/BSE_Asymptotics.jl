@@ -1,7 +1,7 @@
 name = "BSE_SC"
 uuid = "646ec391-26e4-4808-a965-02314d3a2269"
 authors = ["Julian Stobbe <Atomtomate@gmx.de>"]
-version = "2.3.6"
+version = "2.3.7"
 
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"

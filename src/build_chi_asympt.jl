@@ -3,7 +3,7 @@
     improve_χ!(type::Symbol, ωi::Int, χr, χ₀, U, β, h::BSE_SC_Helper; 
                Nit=200, atol=1e-9)
 
-Improves asymptotics of `χr`, given a channel `type = :sp` or `:ch`, using Eq. 12a 12b 
+Improves asymptotics of `χr`, given a channel `type = :m` or `:d`, using Eq. 12a 12b 
 from DOI: 10.1103/PhysRevB.97.235.140
 `ωn` specifies the index of the Matsubara frequency to use. `χ₀` is the bubble term,
 `U` and `β` Hubbard-U and temperature.
@@ -15,9 +15,9 @@ Additionally one can specify convergence parameters:
 """
 function improve_χ!(type::Symbol, ωn::Int, χr::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
                 U::Float64, β::Float64, h::BSE_SC_Helper; Nit=200, atol=1e-9)
-    f = if type == :sp
+    f = if type == :m
         update_Fsp!
-    elseif type == :ch
+    elseif type == :d
         update_Fch!
     else
         error("Unkown channel. Only sp/ch implemented")
@@ -86,14 +86,14 @@ function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::Abstrac
     i1_l = h.ind1_list
     i2_l = view(h.ind2_list, :, ωn)
     fill!(h.diag_asym_buffer, 0)
-    if type == :sp
+    if type == :m
         for i in 1:length(i1_l)
             i1 = h.I_asympt[i]
             i2 = i1_l[i]
             i3 = i2_l[i]
             h.diag_asym_buffer[i1[1]] += ((U^2/2)*h.χch_asympt[i2] - (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3])*(-χ₀[i1[2]])/β^2
         end
-    elseif type == :ch
+    elseif type == :d
         for i in 1:length(i1_l)
             i1 = h.I_asympt[i]
             i2 = i1_l[i]
@@ -111,7 +111,7 @@ F_diag!(type, ωn, U, β, χ₀, h::BSE_Asym_Helper_Approx2) = nothing
 """
     calc_χλ(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64, β::Float64, χ₀_asym::Float64, h::BSE_Asym_Helper)
 
-Calculates the physical susceptibility `χ` and triangular vertex `λ` in a given channel `type=:sp` or `type=:ch` using knowledge about the asymptotics of the full vertex and tails of the Green's function.
+Calculates the physical susceptibility `χ` and triangular vertex `λ` in a given channel `type=:m` or `type=:d` using knowledge about the asymptotics of the full vertex and tails of the Green's function.
 `χ₀_asym` is the `ω` dependent asymptotic tail of `χ₀` and can be calculated with  [`χ₀_shell_sum`](@ref).
 
 TODO: refactor code duplications
@@ -125,7 +125,7 @@ end
 
 function calc_χλ_impr!(λ::Array{ComplexF64,1}, type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
                  U::Float64, β::Float64, χ₀_asym::ComplexF64, h::BSE_Asym_Helper)
-    s = type == :ch ? -1 : 1
+    s = type == :d ? -1 : 1
     ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
     χ₀_core = view(χ₀,ind_core)
     λ[:] = -s*sum(χ,dims=[2])[:,1] ./ χ₀_core .+ s
@@ -140,7 +140,7 @@ end
 
 function calc_χλ_impr!(λ::Array{ComplexF64,1}, type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
                  U::Float64, β::Float64, χ₀_asym::ComplexF64, h::BSE_Asym_Helper_Approx2)
-    s = type == :ch ? -1 : 1
+    s = type == :d ? -1 : 1
     ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
     χ₀_core = view(χ₀,ind_core)
     λ[:] = -s*sum(χ,dims=[2])[:,1] ./ χ₀_core .+ s
@@ -167,7 +167,7 @@ function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
                  χ₀_asym::Array{ComplexF64,2}, γ::AbstractArray{ComplexF64,2}, 
                  χ::AbstractArray{T,1},
                  U::Float64, β::Float64, h; diag_zero::Bool=true) where T <: Union{ComplexF64,Float64}
-    s = (type == :ch) ? -1 : +1
+    s = (type == :d) ? -1 : +1
     ind_core = (h.Nν_shell+1):(size(χ₀,2)-h.Nν_shell)
     Nq = size(χ₀,1)
     Nν = length(ind_core)
