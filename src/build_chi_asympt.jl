@@ -20,7 +20,7 @@ function improve_χ!(type::Symbol, ωn::Int, χr::AbstractArray{ComplexF64,2}, �
     elseif type == :d
         update_Fch!
     else
-        error("Unkown channel. Only sp/ch implemented")
+        error("Unkown channel. Only m/d implemented")
     end
 
     fill!(h.Fr, 0.0)
@@ -101,7 +101,7 @@ function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::Abstrac
             h.diag_asym_buffer[i1[1]] += ((U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3])*(-χ₀[i1[2]])/β^2
         end
     else
-        error("Unrecognized type $(type) for F_diag! Expected sp/ch")
+        error("Unrecognized type $(type) for F_diag! Expected m/d")
     end
 end
 
