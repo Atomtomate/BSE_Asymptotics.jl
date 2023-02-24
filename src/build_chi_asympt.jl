@@ -156,17 +156,17 @@ end
     calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
                  F::AbstractArray{ComplexF64,3}, χ₀::AbstractArray{ComplexF64,3}, 
                  χ₀_asym::Array{ComplexF64,2}, γ::AbstractArray{ComplexF64,2}, 
-                 χ::AbstractArray{ComplexF64,1},
+                 χ::AbstractArray{ComplexF64/Float64,1},
                  U::Float64, β::Float64, h::BSE_Asym_Helper)
     
 Calculates improved version of `λ₀ = χ₀ ⋆ F`.
-TODO: finish documenation and tests.
+TODO: finish documentation and tests.
 """
 function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
                  F::AbstractArray{ComplexF64,3}, χ₀::AbstractArray{ComplexF64,3}, 
                  χ₀_asym::Array{ComplexF64,2}, γ::AbstractArray{ComplexF64,2}, 
-                 χ::AbstractArray{ComplexF64,1},
-                 U::Float64, β::Float64, h; diag_zero::Bool=true)
+                 χ::AbstractArray{T,1},
+                 U::Float64, β::Float64, h; diag_zero::Bool=true) where T <: Union{ComplexF64,Float64}
     s = (type == :ch) ? -1 : +1
     ind_core = (h.Nν_shell+1):(size(χ₀,2)-h.Nν_shell)
     Nq = size(χ₀,1)
