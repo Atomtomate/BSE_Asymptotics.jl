@@ -6,7 +6,7 @@ Input: χ^{ν,νp,ω}_{r}
 Output: χ^{ω}_{r}, λ^{ν,ω}_{r} oder γ^{ν,ω}_{r}
 
 """
-module BSE_SC
+module BSE_Asymptotics
 
 export setup, read_gImp
 export BSE_SC_Helper, BSE_Asym_Helper, BSE_Asym_Helper_Approx1, BSE_Asym_Helper_Approx2, BSE_Asym_Helpers, BSE_SC_Helpers

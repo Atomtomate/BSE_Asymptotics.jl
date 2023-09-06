@@ -1,10 +1,10 @@
 @testset "index(1:) to freq" begin
     #no shift tests
-    @test all(BSE_SC.OneToIndex_to_Freq(1,1,5,5,0) .== (-5,-5))
-    @test all(BSE_SC.OneToIndex_to_Freq(10,10,5,5,0) .== (4,4))
+    @test all(BSE_Asymptotics.OneToIndex_to_Freq(1,1,5,5,0) .== (-5,-5))
+    @test all(BSE_Asymptotics.OneToIndex_to_Freq(10,10,5,5,0) .== (4,4))
     #shift tests
-    @test all(BSE_SC.OneToIndex_to_Freq(1,1,5,5,1) .== (-5,-3))
-    @test all(BSE_SC.OneToIndex_to_Freq(10,10,5,5,1) .== (4,2))
+    @test all(BSE_Asymptotics.OneToIndex_to_Freq(1,1,5,5,1) .== (-5,-3))
+    @test all(BSE_Asymptotics.OneToIndex_to_Freq(10,10,5,5,1) .== (4,2))
 end
 
 #TODO: reactivate, once github CI works
@@ -23,10 +23,10 @@ end
 =#
 
 @testset "n to i" begin
-    @test BSE_SC.ωn_to_ωi(0) == 1
-    @test BSE_SC.ωn_to_ωi(1) == 2
-    @test BSE_SC.ωn_to_ωi(-1) == 2
-    @test all(BSE_SC.OneToIndex_to_Freq(11,11,10,10,1) == (0,0))
-    @test all(BSE_SC.OneToIndex_to_Freq(1,1,10,10,1) == (-10,-5))
-    @test all(BSE_SC.OneToIndex_to_Freq(1,1,10,10,0) == (-10,-10))
+    @test BSE_Asymptotics.ωn_to_ωi(0) == 1
+    @test BSE_Asymptotics.ωn_to_ωi(1) == 2
+    @test BSE_Asymptotics.ωn_to_ωi(-1) == 2
+    @test all(BSE_Asymptotics.OneToIndex_to_Freq(11,11,10,10,1) == (0,0))
+    @test all(BSE_Asymptotics.OneToIndex_to_Freq(1,1,10,10,1) == (-10,-5))
+    @test all(BSE_Asymptotics.OneToIndex_to_Freq(1,1,10,10,0) == (-10,-10))
 end

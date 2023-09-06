@@ -1,5 +1,5 @@
 using Test
-using BSE_SC
+using BSE_Asymptotics
 using JLD2
 
 include("../src/dbg_tools.jl")
