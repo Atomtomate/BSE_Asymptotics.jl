@@ -52,8 +52,7 @@ function update_Fsp!(χ::ComplexF64, U::Float64, ωn::Int, h::BSE_SC_Helper)
         i1 = h.I_asympt[i]
         i2 = i1_l[i]
         i3 = i2_l[i]
-        h.Fr[i1] = -U + (U^2)*χ + U*h.λr[i1[1]]  + U*h.λr[i1[2]] 
-            + (U^2/2)*h.χch_asympt[i2] - (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3] 
+        h.Fr[i1] = -U + (U^2)*χ + U*h.λr[i1[1]]  + U*h.λr[i1[2]] + (U^2/2)*h.χch_asympt[i2] - (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3] 
     end
 end
 
@@ -64,8 +63,7 @@ function update_Fch!(χ::ComplexF64, U::Float64, ωn::Int, h::BSE_SC_Helper)
         i1 = h.I_asympt[i]
         i2 = i1_l[i]
         i3 = i2_l[i]
-        h.Fr[i1] = U + (U^2)*χ  - U*h.λr[i1[1]] - U*h.λr[i1[2]]
-            + (U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3]
+        h.Fr[i1] = U + (U^2)*χ  - U*h.λr[i1[1]] - U*h.λr[i1[2]] + (U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3]
     end
 end
 
@@ -119,7 +117,7 @@ TODO: refactor code duplications
 function calc_χλ_impr(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
                  U::Float64, β::Float64, χ₀_asym::ComplexF64, h::HT) where  HT <: BSE_Asym_Helpers
     λ = Array{eltype(χ),1}(undef, size(χ, 1))
-    calc_χλ_impr!(λ, type, ωn, χ, χ₀, U, β, χ₀_asym, h)
+    χ_out = calc_χλ_impr!(λ, type, ωn, χ, χ₀, U, β, χ₀_asym, h)
     return χ_out, λ
 end
 
@@ -177,9 +175,9 @@ function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
     res = Array{ComplexF64,3}(undef, Nq, Nν, Nω)
 
     diag_term = if !diag_zero && hasfield(typeof(h), :diag_asym_buffer)
-        println("DBG: using diagonal terms in λ₀")
+        println(stderr, "DBG: using diagonal terms in λ₀")
     else
-        println("DBG: NOT using diagonal terms in λ₀")
+        println(stderr, "DBG: NOT using diagonal terms in λ₀")
     end
 
     for (ωi,ωn) in enumerate(ωgrid)
