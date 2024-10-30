@@ -36,13 +36,13 @@ function update_Fch!(χ::ComplexF64, U::Float64, ωi::Int, h)
 end
 
 function improve_χ_trace!(type::Symbol, ωi::Int, χr::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
-                U::Float64, β::Float64, h; Nit=200, atol=1e-9)
+                U::Float64, β::Float64, h::BSE_SC_Helper; Nit=200, atol=1e-9)
     f = if type == :m
         update_Fsp!
     elseif type == :d
         update_Fch!
     else
-        error("Unkown channel. Only sp/ch implemented")
+        error("Unkown channel. Only m/d implemented")
     end
 
     Fr_trace = []
@@ -81,7 +81,8 @@ function improve_χ_trace!(type::Symbol, ωi::Int, χr::AbstractArray{ComplexF64
 end
 
 
-function improve_χλ_direct(ωn::Int, χsp::AbstractArray{ComplexF64,2}, χch::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, U::Float64, β::Float64, bs, h::BSE_Asym_Helper)
+function improve_χλ_direct(ωn::Int, χsp::AbstractArray{ComplexF64,2}, χch::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
+                           U::Float64, β::Float64, bs, h::BSE_Asym_Helper)
     i1_l = h.ind1_list
     i2_l = view(h.ind2_list, :, ωn)
     ind_core = (h.Nν_shell+1):(length(χ₀)-h.Nν_shell)

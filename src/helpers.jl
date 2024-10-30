@@ -146,7 +146,8 @@ using direct asymptotics. See `BSE_Asym_Helper` for the helper for a direct vers
 `n_iν`: number of positive Fermionic frequencies.
 `shift`: `1` or `0`, depending on whether or not the Fermionic frequencies are shifted by `ω/2`
 """
-    function BSE_Asym_Helper(χsp_asympt, χch_asympt, χpp_asympt, Nν_shell, U, β, n_iω, n_iν, shift)
+    function BSE_Asym_Helper(χsp_asympt::Vector{ComplexF64}, χch_asympt::Vector{ComplexF64}, χpp_asympt::Vector{ComplexF64},
+                             Nν_shell::Int64, U::Float64, β::Float64, n_iω::Int64, n_iν::Int64, shift::Int64)
         n_iν_f = n_iν + Nν_shell
         Nν_full = 2*n_iν_f 
         I_core, I_corner, I_t, I_r = shell_indices(Nν_full, Nν_shell)

@@ -71,7 +71,7 @@ function update_χ!(λ::AbstractArray{ComplexF64,1}, χ::AbstractArray{ComplexF6
         F::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
         β::Float64, indices::AbstractArray{CartesianIndex{2},1})
     for i in indices
-        x[i] = i[1] == i[2] ? χ₀[i[1]] : 0
+        χ[i] = i[1] == i[2] ? χ₀[i[1]] : 0
         χ[i] -= χ₀[i[1]]*F[i]*χ₀[i[2]]/(β^2)
     end
     for νk in 1:size(χ,2)
