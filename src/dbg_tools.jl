@@ -49,20 +49,22 @@ function improve_χ_trace!(type::Symbol, ωi::Int, χr::AbstractArray{ComplexF64
     χr_trace = []
     χlocr_trace = []
     λr_trace = []
-    fill!(h.Fr, 0.0)
+    max_ind = maximum(h.I_core)
+    Fr = zeros(ComplexF64, max_ind[1], max_ind[2])
+    fill!(Fr, 0.0)
     for i in h.I_core
         δ_ννp = Float64(i[1] == i[2])
-        h.Fr[i] = - β^2 * (χr[i] - δ_ννp*χ₀[i[1]])/(χ₀[i[1]]*χ₀[i[2]])
+        Fr[i] = - β^2 * (χr[i] - δ_ννp*χ₀[i[1]])/(χ₀[i[1]]*χ₀[i[2]])
     end
     χr_old = 0.0
     converged = false
     i = 0
-    push!(Fr_trace, deepcopy(h.Fr))
+    push!(Fr_trace, deepcopy(Fr))
     push!(χr_trace, deepcopy(χr))
     push!(χlocr_trace, deepcopy(χr_old))
     push!(λr_trace, deepcopy(h.λr))
     while !converged && (i < Nit)
-        χr_n = update_χ!(h.λr, χr, h.Fr, χ₀, β, h.I_asympt)
+        χr_n = update_χ!(h.λr, χr, Fr, χ₀, β, h.I_asympt)
         f(χr_n, U, ωi, h)
         if (abs(χr_old - χr_n) < atol)
             converged = true
@@ -71,7 +73,7 @@ function improve_χ_trace!(type::Symbol, ωi::Int, χr::AbstractArray{ComplexF64
             χr_old = χr_n
         end
         if i == 1 || i == 3 || (i == Nit || converged)
-            push!(Fr_trace, deepcopy(h.Fr))
+            push!(Fr_trace, deepcopy(Fr))
             push!(χr_trace, deepcopy(χr))
             push!(χlocr_trace, deepcopy(χr_old))
             push!(λr_trace, deepcopy(h.λr))

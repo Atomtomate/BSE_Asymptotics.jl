@@ -40,7 +40,7 @@ function setup(input_file::String, N_shell::Int; use_sc_method=false)
         h = BSE_SC_Helper(χ_m_asympt, χ_d_asympt, χ_pp_asympt, Nν_full, N_shell, n_iω, n_iν, shift)
         χ_sp_improved, χ_ch_improved, h
     else
-        h = BSE_Asym_Helper(χ_m_asympt, χ_d_asympt, χ_pp_asympt, N_shell, U, β, n_iω, n_iν - N_shell, shift)
+        h = BSE_Asym_Helper(χ_m_asympt, χ_d_asympt, χ_pp_asympt, N_shell, U, U, β, n_iω, n_iν - N_shell, shift)
         χDMFTsp, χDMFTch, h
     end
 
