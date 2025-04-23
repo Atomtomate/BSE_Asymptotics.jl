@@ -86,7 +86,7 @@ function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::Abstrac
         for i in eachindex(h.block_i)
             h.diag_asym_buffer[h.block_i[i]] = 0
             for j in h.block_slices[i]
-                h.diag_asym_buffer[h.block_i[i]]  += ((U^2/2)*h.χch_asympt[h.ind2_list[j]] - (U^2/2)*h.χsp_asympt[h.ind2_list[j]] + (U^2)*h.χpp_asympt[ind3_list_ω[j]])*(-χ₀[h.ind1_list[j]])/β^2
+                @inbounds h.diag_asym_buffer[h.block_i[i]]  += ((U^2/2)*h.χch_asympt[h.ind2_list[j]] - (U^2/2)*h.χsp_asympt[h.ind2_list[j]] + (U^2)*h.χpp_asympt[ind3_list_ω[j]])*(-χ₀[h.ind1_list[j]])/β^2
             end
         end
     elseif type == :d
@@ -94,7 +94,7 @@ function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::Abstrac
             ii = h.block_i[i]
             h.diag_asym_buffer[ii] = 0
             for j in h.block_slices[i]
-                @inbounds h.diag_asym_buffer[ii]  += ((U^2/2)*h.χch_asympt[h.ind2_list[j]] + 3*(U^2/2)*h.χsp_asympt[h.ind2_list[j]] - (U^2)*h.χpp_asympt[h.ind3_list[j]])*(-χ₀[h.ind1_list[j]])/β^2
+                @inbounds h.diag_asym_buffer[h.block_i[i]]  += ((U^2/2)*h.χch_asympt[h.ind2_list[j]] + 3*(U^2/2)*h.χsp_asympt[h.ind2_list[j]] - (U^2)*h.χpp_asympt[h.ind3_list[j]])*(-χ₀[h.ind1_list[j]])/β^2
             end
         end
     else
