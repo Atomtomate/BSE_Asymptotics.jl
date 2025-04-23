@@ -81,22 +81,21 @@ function update_χ!(λ::AbstractArray{ComplexF64,1}, χ::AbstractArray{ComplexF6
 end
 
 function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::AbstractArray{ComplexF64,1}, h::BSE_Asym_Helper)
-    i1_l = h.ind1_list
-    i2_l = view(h.ind2_list, :, ωn)
-    fill!(h.diag_asym_buffer, 0)
+    ind3_list_ω = view(h.ind3_list, :, ωn)
     if type == :m
-        for i in 1:length(i1_l)
-            i1 = h.I_asympt[i]
-            i2 = i1_l[i]
-            i3 = i2_l[i]
-            h.diag_asym_buffer[i1[1]] += ((U^2/2)*h.χch_asympt[i2] - (U^2/2)*h.χsp_asympt[i2] + (U^2)*h.χpp_asympt[i3])*(-χ₀[i1[2]])/β^2
+        for i in eachindex(h.block_i)
+            h.diag_asym_buffer[h.block_i[i]] = 0
+            for j in h.block_slices[i]
+                h.diag_asym_buffer[h.block_i[i]]  += ((U^2/2)*h.χch_asympt[h.ind2_list[j]] - (U^2/2)*h.χsp_asympt[h.ind2_list[j]] + (U^2)*h.χpp_asympt[ind3_list_ω[j]])*(-χ₀[h.ind1_list[j]])/β^2
+            end
         end
     elseif type == :d
-        for i in 1:length(i1_l)
-            i1 = h.I_asympt[i]
-            i2 = i1_l[i]
-            i3 = i2_l[i]
-            h.diag_asym_buffer[i1[1]] += ((U^2/2)*h.χch_asympt[i2] + 3*(U^2/2)*h.χsp_asympt[i2] - (U^2)*h.χpp_asympt[i3])*(-χ₀[i1[2]])/β^2
+        for i in eachindex(h.block_i)
+            ii = h.block_i[i]
+            h.diag_asym_buffer[ii] = 0
+            for j in h.block_slices[i]
+                @inbounds h.diag_asym_buffer[ii]  += ((U^2/2)*h.χch_asympt[h.ind2_list[j]] + 3*(U^2/2)*h.χsp_asympt[h.ind2_list[j]] - (U^2)*h.χpp_asympt[h.ind3_list[j]])*(-χ₀[h.ind1_list[j]])/β^2
+            end
         end
     else
         error("Unrecognized type $(type) for F_diag! Expected m/d")

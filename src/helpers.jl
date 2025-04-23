@@ -111,6 +111,7 @@ end
 
 Helper struct for efficient improvement of the result after the inversion in the Bethe Salpeter equation. 
 For an example see also [`setup`](@ref).
+TODO: update documentation `I_asympt` no longer in use. Optimize 
 
 Fields
 -------------
@@ -119,9 +120,11 @@ Fields
 - **`χpp_asympt`** : ω-asymptotic for the susceptibility in the pp channel
 - **`Nν_shell`**   : Number of Fermionic frequencies used for asymptotic extension.
 - **`I_core`**     : Indices for the core (non-asymptotic) region.
-- **`I_asympt`**   : Indices for the asymptotic region (union of I_corner, I_t, I_r).
-- **`ind1_list`**  : ν-ν' indices in `χsp_asympt` and `χch_asympt` for all `I_asympt`
-- **`ind2_list`**  : ν+ν'+ω indices in `χpp_asympt` for all `I_asympt`
+- **`block_i`**    : Sorted index into `F_asympt`.
+- **`block_slices`** : Blocks of indices for the remaining the index lists (this improves performance by collecting all summands for one F_asymp index into one block).
+- **`ind1_list`**  : index into χ₀ for all `I_asympt
+- **`ind2_list`**  : ν-ν' indices in `χsp_asympt` and `χch_asympt` for all `I_asympt`
+- **`ind3_list`**  : ν+ν'+ω indices in `χpp_asympt` for all `I_asympt`
 - **`shift`**      : `1` or `0` depending on wheter the ν-frequencies are shfited by `-ω/2`
 """
 struct BSE_Asym_Helper <: BSE_Asym_Helpers
@@ -130,9 +133,11 @@ struct BSE_Asym_Helper <: BSE_Asym_Helpers
     χpp_asympt::Array{ComplexF64,1}
     Nν_shell::Int
     I_core::Array{CartesianIndex{2},1}
-    I_asympt::Array{CartesianIndex{2},1}
+    block_i::Vector{Int}
+    block_slices::Vector{UnitRange{Int64}}
     ind1_list::Array{Int,1}
-    ind2_list::OffsetArray{Int,2}
+    ind2_list::Array{Int,1}
+    ind3_list::OffsetArray{Int,2}
     shift::Int
     diag_asym_buffer::Array{ComplexF64,1}
 """
@@ -153,24 +158,48 @@ using direct asymptotics. See `BSE_Asym_Helper` for the helper for a direct vers
         n_iν_f = n_iν + Nν_shell
         Nν_full = 2*n_iν_f 
         I_core, I_corner, I_t, I_r = shell_indices(Nν_full, Nν_shell)
-        I_all = sort(union(I_core, I_corner, I_r, I_t))
         I_asympt = sort(union(I_corner, I_r, I_t))
         ind2_list = OffsetArray(Array{Int, 2}(undef, length(I_asympt), 2*n_iω+1), 1:length(I_asympt), -n_iω:n_iω)
         i1l, i2l = aux_indices(I_asympt, 1, n_iω, n_iν_f, shift)
         for ωi in 1:(2*n_iω+1)
             i1l, i2l = aux_indices(I_asympt, ωi, n_iω, n_iν_f, shift)
             ind2_list[:,ωi-n_iω-1] = i2l
-            for i in 1:length(i1l)
-                i1 = I_asympt[i]
-                i2 = i1l[i]
-                i3 = i2l[i]
-            end
         end
-
+        block_i, block_slices, ind1_list, ii = optimize_indices(I_asympt)
         buffer = Array{ComplexF64,1}(undef, Nν_full)
-        new(χsp_asympt, χch_asympt, χpp_asympt, Nν_shell, I_core, I_asympt,
-            i1l, ind2_list, shift, buffer)
+        new(χsp_asympt, χch_asympt, χpp_asympt, Nν_shell, I_core, block_i, block_slices, ind1_list,
+            i1l[ii], ind2_list[ii,:], shift, buffer)
     end
+end
+
+"""
+    optimize_indices(I_asympt)
+
+Returns blocks of consecutive indices for the first index in `I_asympt` and corresponding slices for the indexing of the remaining indices.
+`block_indices` contains the slices of indices used in the remaining three index lists (`ind1_list` and `ind2_list` in `BSE_Asym_Helper`).
+`ii_2[ii]` is the second index of the `I_asympt` list.
+"""
+function optimize_indices(I_asympt)
+    ii_1::Vector{Int} = map(x->x[1], I_asympt)
+    ii_2::Vector{Int} = map(x->x[2], I_asympt)
+
+    ii = sortperm(ii_1)
+    tmp_i1_l = ii_1[ii]
+    block_slices::Vector{UnitRange{Int64}} = []
+    block_i::Vector{Int} = []
+    ci = 1
+    ci_s = 1
+    for i in eachindex(tmp_i1_l)
+        if tmp_i1_l[i] > ci
+            push!(block_slices, ci_s:(i-1))
+            push!(block_i, ci)
+            ci = tmp_i1_l[i]
+            ci_s = i
+        end
+    end
+    push!(block_slices, ci_s:length(tmp_i1_l))
+    push!(block_i, tmp_i1_l[end])
+    block_i, block_slices, ii_2[ii], ii
 end
 
 """
