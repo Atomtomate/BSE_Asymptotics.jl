@@ -37,7 +37,7 @@
 end
 
 @testset "BSE_Asym" begin
-    h = BSE_Asym_Helper(1:20,100:120,1000:1020,2,1.1,11.2,3,3,1)
+    #h = BSE_Asym_Helper(1:20,100:120,1000:1020,2,1.1,11.2,3,3,1)
     h_a1 = BSE_Asym_Helper_Approx1(1:20,100:120,1000:1020,2,1.1,11.2,3,3,1)
     h_a2 = BSE_Asym_Helper_Approx2(3)
 end

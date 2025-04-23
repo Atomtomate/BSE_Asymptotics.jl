@@ -125,7 +125,7 @@ function calc_χλ_impr!(λ::Array{ComplexF64,1}, type::Symbol, ωn::Int, χ::Ab
     s = type == :d ? -1 : 1
     ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
     χ₀_core = view(χ₀,ind_core)
-    λ[:] = -s*sum(χ,dims=[2])[:,1] ./ χ₀_core .+ s
+    λ[:] = -s*dropdims(sum(χ,dims=2), dims=2) ./ χ₀_core .+ s
     χ_core = sum(χ)/β^2
     F_diag!(type, ωn, U, β, χ₀, h)
     λ[:] = (λ .- s*view(h.diag_asym_buffer, ind_core) .- U*χ₀_asym)/(1-s*U*χ₀_asym)
