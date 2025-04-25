@@ -214,8 +214,8 @@ function build_asym_buffer(I_asympt, ind2_list_pre, ind3_list_pre, χsp_asympt, 
         for j in eachindex(ind2_list)
             t1 = ind2_list[j]
             t2 = ind3_list[j, ωm]
-            buffer_m[j, ωi] = ((U^2/2)*χch_asympt[t1] -   (U^2/2)*χsp_asympt[t1] + (U^2)*χpp_asympt[t2])/β^2
-            buffer_d[j, ωi] = ((U^2/2)*χch_asympt[t1] + 3*(U^2/2)*χsp_asympt[t1] - (U^2)*χpp_asympt[t2])/β^2
+            buffer_m[j, ωm] = ((U^2/2)*χch_asympt[t1] -   (U^2/2)*χsp_asympt[t1] + (U^2)*χpp_asympt[t2])/β^2
+            buffer_d[j, ωm] = ((U^2/2)*χch_asympt[t1] + 3*(U^2/2)*χsp_asympt[t1] - (U^2)*χpp_asympt[t2])/β^2
         end
     end
 
