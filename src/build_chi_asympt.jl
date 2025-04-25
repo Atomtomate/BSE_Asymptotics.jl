@@ -80,25 +80,15 @@ function update_χ!(λ::AbstractArray{ComplexF64,1}, χ::AbstractArray{ComplexF6
     return sum(χ)/(β^2)
 end
 
-function F_diag!(type::Symbol, ωn::Int, U::Float64, β::Float64, χ₀::AbstractArray{ComplexF64,1}, h::BSE_Asym_Helper)
-    ind3_list_ω = view(h.ind3_list, :, ωn)
-    if type == :m
-        for i in eachindex(h.block_i)
-            h.diag_asym_buffer[h.block_i[i]] = 0
-            for j in h.block_slices[i]
-                @inbounds h.diag_asym_buffer[h.block_i[i]]  += ((U^2/2)*h.χch_asympt[h.ind2_list[j]] - (U^2/2)*h.χsp_asympt[h.ind2_list[j]] + (U^2)*h.χpp_asympt[ind3_list_ω[j]])*(-χ₀[h.ind1_list[j]])/β^2
-            end
+function F_diag!(qi::Int, ωi::Int,  ωn::Int, χ₀::Array{ComplexF64,3},
+                        buffer::OffsetMatrix{ComplexF64}, h::BSE_Asym_Helper)
+
+    for i in eachindex(h.block_i)
+        ii = h.block_i[i]
+        h.diag_asym_buffer[ii] = 0
+        for j in h.block_slices[i]
+            h.diag_asym_buffer[ii] += buffer[j, ωn]*(-χ₀[qi,h.ind1_list[j],ωi])
         end
-    elseif type == :d
-        for i in eachindex(h.block_i)
-            ii = h.block_i[i]
-            h.diag_asym_buffer[ii] = 0
-            for j in h.block_slices[i]
-                @inbounds h.diag_asym_buffer[h.block_i[i]]  += ((U^2/2)*h.χch_asympt[h.ind2_list[j]] + 3*(U^2/2)*h.χsp_asympt[h.ind2_list[j]] - (U^2)*h.χpp_asympt[h.ind3_list[j]])*(-χ₀[h.ind1_list[j]])/β^2
-            end
-        end
-    else
-        error("Unrecognized type $(type) for F_diag! Expected m/d")
     end
 end
 
@@ -113,38 +103,34 @@ Calculates the physical susceptibility `χ` and triangular vertex `λ` in a give
 
 TODO: refactor code duplications
 """
-function calc_χλ_impr(type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
+function calc_χλ_impr(type::Symbol, qi::Int, ωi::Int, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
                  U::Float64, β::Float64, χ₀_asym::ComplexF64, h::HT) where  HT <: BSE_Asym_Helpers
     λ = Array{eltype(χ),1}(undef, size(χ, 1))
-    χ_out = calc_χλ_impr!(λ, type, ωn, χ, χ₀, U, β, χ₀_asym, h)
+    χ_out = calc_χλ_impr!(λ, type, qi, ωi, ωn, χ, χ₀, U, β, χ₀_asym, h)
     return χ_out, λ
 end
 
-function calc_χλ_impr!(λ::Array{ComplexF64,1}, type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
-                 U::Float64, β::Float64, χ₀_asym::ComplexF64, h::BSE_Asym_Helper)
+function calc_χλ_impr!(λ::Array{ComplexF64,1}, type::Symbol, qi::Int, ωi::Int, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,3}, 
+                 U::Float64, β::Float64, χ₀_asym::ComplexF64, h::BSE_Asym_Helper)::ComplexF64
     s = type == :d ? -1 : 1
-    ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
-    χ₀_core = view(χ₀,ind_core)
-    λ[:] = -s*dropdims(sum(χ,dims=2), dims=2) ./ χ₀_core .+ s
-    χ_core = sum(χ)/β^2
-    F_diag!(type, ωn, U, β, χ₀, h)
-    λ[:] = (λ .- s*view(h.diag_asym_buffer, ind_core) .- U*χ₀_asym)/(1-s*U*χ₀_asym)
-    λ_s = -sum((U .* λ .- s*U) .* χ₀_core)/β^2
-    diag_asym_s = -sum(h.diag_asym_buffer .* χ₀)/β^2
-    χ_out = (χ_core + χ₀_asym*(1+2*λ_s+s*U*χ₀_asym) - diag_asym_s)/(1-U^2 * χ₀_asym^2)
-    return χ_out
-end
+    F_diag!(qi, ωi, ωn, χ₀, type == :d ? h.buffer_d : h.buffer_m, h)
 
-function calc_χλ_impr!(λ::Array{ComplexF64,1}, type::Symbol, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
-                 U::Float64, β::Float64, χ₀_asym::ComplexF64, h::BSE_Asym_Helper_Approx2)
-    s = type == :d ? -1 : 1
-    ind_core = (h.Nν_shell+1):(size(χ₀,1)-h.Nν_shell)
-    χ₀_core = view(χ₀,ind_core)
-    λ[:] = -s*sum(χ,dims=[2])[:,1] ./ χ₀_core .+ s
-    χ_core = sum(χ)/β^2
-    λ[:] = (λ .- U*χ₀_asym)/(1-s*U*χ₀_asym)
-    λ_s = -sum((U .* λ .- s*U) .* χ₀_core)/β^2
-    χ_out = (χ_core + χ₀_asym*(1+2*λ_s+s*U*χ₀_asym))/(1-U^2 * χ₀_asym^2)
+    core_offset::Int = h.Nν_shell
+    norm::ComplexF64 = 1 / (1-s*U*χ₀_asym)
+    λ_s::ComplexF64 = 0.0
+    χ_core::ComplexF64 = 0.0
+    for νi in axes(λ, 1)
+        λ_core::ComplexF64 = sum(view(χ,νi, :))
+        χ_core += λ_core
+        χ₀_val::ComplexF64 = χ₀[qi,core_offset+νi,ωi]
+        @inbounds λ[νi] = (-s*λ_core / χ₀_val + s - s * h.diag_asym_buffer[core_offset+νi] - U*χ₀_asym) * norm
+        @inbounds λ_s -= (U * λ[νi] - s*U) * χ₀_val
+    end
+    λ_s /= β^2
+    χ_core /= β^2
+    diag_asym_s::ComplexF64 = -dot(h.diag_asym_buffer, view(χ₀,qi,:,ωi))/β^2
+    χ_out::ComplexF64 = (χ_core + χ₀_asym*(1+2*λ_s+s*U*χ₀_asym) - diag_asym_s)/(1-U^2 * χ₀_asym^2)
+
     return χ_out
 end
 

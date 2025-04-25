@@ -118,6 +118,8 @@ Fields
 - **`χsp_asympt`** : ω-asymptotic for the susceptibility in the spin-ph channel
 - **`χch_asympt`** : ω-asymptotic for the susceptibility in the charge-ph channel
 - **`χpp_asympt`** : ω-asymptotic for the susceptibility in the pp channel
+- **`buffer_m`**   : Asymptotic contribution of the magnetic channel. Stored in a suitable access format for `F_diag`.
+- **`buffer_d`**   : Asymptotic contribution of the density channel. Stored in a suitable access format for `F_diag`.
 - **`Nν_shell`**   : Number of Fermionic frequencies used for asymptotic extension.
 - **`I_core`**     : Indices for the core (non-asymptotic) region.
 - **`block_i`**    : Sorted index into `F_asympt`.
@@ -131,6 +133,8 @@ struct BSE_Asym_Helper <: BSE_Asym_Helpers
     χsp_asympt::Array{ComplexF64,1}
     χch_asympt::Array{ComplexF64,1}
     χpp_asympt::Array{ComplexF64,1}
+    buffer_m::Array{ComplexF64,2}
+    buffer_d::Array{ComplexF64,2}
     Nν_shell::Int
     I_core::Array{CartesianIndex{2},1}
     block_i::Vector{Int}
@@ -159,16 +163,17 @@ using direct asymptotics. See `BSE_Asym_Helper` for the helper for a direct vers
         Nν_full = 2*n_iν_f 
         I_core, I_corner, I_t, I_r = shell_indices(Nν_full, Nν_shell)
         I_asympt = sort(union(I_corner, I_r, I_t))
-        ind2_list = OffsetArray(Array{Int, 2}(undef, length(I_asympt), 2*n_iω+1), 1:length(I_asympt), -n_iω:n_iω)
+        ind2_list_pre = OffsetArray(Array{Int, 2}(undef, length(I_asympt), 2*n_iω+1), 1:length(I_asympt), -n_iω:n_iω)
         i1l, i2l = aux_indices(I_asympt, 1, n_iω, n_iν_f, shift)
         for ωi in 1:(2*n_iω+1)
             i1l, i2l = aux_indices(I_asympt, ωi, n_iω, n_iν_f, shift)
-            ind2_list[:,ωi-n_iω-1] = i2l
+            ind2_list_pre[:,ωi-n_iω-1] = i2l
         end
-        block_i, block_slices, ind1_list, ii = optimize_indices(I_asympt)
+        buffer_m, buffer_d, block_i, block_slices, ind1_list, ind2_list, ind3_list = build_asym_buffer(
+                I_asympt, i1l, ind2_list_pre, χsp_asympt, χch_asympt, χpp_asympt, U, -n_iω:n_iω)
         buffer = Array{ComplexF64,1}(undef, Nν_full)
-        new(χsp_asympt, χch_asympt, χpp_asympt, Nν_shell, I_core, block_i, block_slices, ind1_list,
-            i1l[ii], ind2_list[ii,:], shift, buffer)
+        new(χsp_asympt, χch_asympt, χpp_asympt, buffer_m, buffer_d, Nν_shell, I_core, block_i, block_slices, 
+            ind1_list, ind2_list, ind3_list, shift, buffer)
     end
 end
 
@@ -179,7 +184,7 @@ Returns blocks of consecutive indices for the first index in `I_asympt` and corr
 `block_indices` contains the slices of indices used in the remaining three index lists (`ind1_list` and `ind2_list` in `BSE_Asym_Helper`).
 `ii_2[ii]` is the second index of the `I_asympt` list.
 """
-function optimize_indices(I_asympt)
+function build_asym_buffer(I_asympt, ind2_list_pre, ind3_list_pre, χsp_asympt, χch_asympt, χpp_asympt, U, ωrange)
     ii_1::Vector{Int} = map(x->x[1], I_asympt)
     ii_2::Vector{Int} = map(x->x[2], I_asympt)
 
@@ -199,7 +204,22 @@ function optimize_indices(I_asympt)
     end
     push!(block_slices, ci_s:length(tmp_i1_l))
     push!(block_i, tmp_i1_l[end])
-    block_i, block_slices, ii_2[ii], ii
+
+    ind2_list = ind2_list_pre[ii]
+    ind3_list = ind3_list_pre[ii,:]
+
+    buffer_m = OffsetArray(Matrix{ComplexF64}(undef, size(ind3_list)), 1:size(ind3_list,1), ωrange)
+    buffer_d = OffsetArray(Matrix{ComplexF64}(undef, size(ind3_list)), 1:size(ind3_list,1), ωrange)
+    for (ωi, ωm) in enumerate(ωrange)
+        for j in eachindex(ind2_list)
+            t1 = ind2_list[j]
+            t2 = ind3_list[j, ωm]
+            buffer_m[j, ωi] = ((U^2/2)*χch_asympt[t1] -   (U^2/2)*χsp_asympt[t1] + (U^2)*χpp_asympt[t2])/β^2
+            buffer_d[j, ωi] = ((U^2/2)*χch_asympt[t1] + 3*(U^2/2)*χsp_asympt[t1] - (U^2)*χpp_asympt[t2])/β^2
+        end
+    end
+
+    buffer_m, buffer_d, block_i, block_slices, ii_2[ii], ind2_list, ind3_list
 end
 
 """
