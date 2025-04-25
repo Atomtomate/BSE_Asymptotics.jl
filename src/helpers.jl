@@ -158,19 +158,19 @@ using direct asymptotics. See `BSE_Asym_Helper` for the helper for a direct vers
     function BSE_Asym_Helper(χsp_asympt::Vector{ComplexF64}, 
                              χch_asympt::Vector{ComplexF64}, 
                              χpp_asympt::Vector{ComplexF64}, 
-                             Nν_shell::Int, U::Float64, β::Float64, n_iω::Int, n_iν::Int, shift::Int)
+                             Nν_shell::Int, U::Float64, β::Float64, n_iω::Int, n_iν::Int, shift::Int, ωrange::AbstractVector{Int} = -n_iω:n_iω)
         n_iν_f = n_iν + Nν_shell
         Nν_full = 2*n_iν_f 
         I_core, I_corner, I_t, I_r = shell_indices(Nν_full, Nν_shell)
         I_asympt = sort(union(I_corner, I_r, I_t))
-        ind2_list_pre = OffsetArray(Array{Int, 2}(undef, length(I_asympt), 2*n_iω+1), 1:length(I_asympt), -n_iω:n_iω)
+        ind2_list_pre = OffsetArray(Array{Int, 2}(undef, length(I_asympt), 2*n_iω+1), 1:length(I_asympt), ωrange)
         i1l, i2l = aux_indices(I_asympt, 1, n_iω, n_iν_f, shift)
         for ωi in 1:(2*n_iω+1)
             i1l, i2l = aux_indices(I_asympt, ωi, n_iω, n_iν_f, shift)
             ind2_list_pre[:,ωi-n_iω-1] = i2l
         end
         buffer_m, buffer_d, block_i, block_slices, ind1_list, ind2_list, ind3_list = build_asym_buffer(
-                I_asympt, i1l, ind2_list_pre, χsp_asympt, χch_asympt, χpp_asympt, U, -n_iω:n_iω)
+                I_asympt, i1l, ind2_list_pre, χsp_asympt, χch_asympt, χpp_asympt, U, β, ωrange)
         buffer = Array{ComplexF64,1}(undef, Nν_full)
         new(χsp_asympt, χch_asympt, χpp_asympt, buffer_m, buffer_d, Nν_shell, I_core, block_i, block_slices, 
             ind1_list, ind2_list, ind3_list, shift, buffer)
@@ -184,7 +184,7 @@ Returns blocks of consecutive indices for the first index in `I_asympt` and corr
 `block_indices` contains the slices of indices used in the remaining three index lists (`ind1_list` and `ind2_list` in `BSE_Asym_Helper`).
 `ii_2[ii]` is the second index of the `I_asympt` list.
 """
-function build_asym_buffer(I_asympt, ind2_list_pre, ind3_list_pre, χsp_asympt, χch_asympt, χpp_asympt, U, ωrange)
+function build_asym_buffer(I_asympt, ind2_list_pre, ind3_list_pre, χsp_asympt, χch_asympt, χpp_asympt, U, β, ωrange)
     ii_1::Vector{Int} = map(x->x[1], I_asympt)
     ii_2::Vector{Int} = map(x->x[2], I_asympt)
 
