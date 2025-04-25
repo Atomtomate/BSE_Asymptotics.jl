@@ -1,7 +1,7 @@
 name = "BSE_Asymptotics"
 uuid = "646ec391-26e4-4808-a965-02314d3a2269"
 authors = ["Julian Stobbe <Atomtomate@gmx.de>"]
-version = "3.2.2"
+version = "3.2.3"
 
 [deps]
 ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"

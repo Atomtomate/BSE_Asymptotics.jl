@@ -92,6 +92,18 @@ function F_diag!(qi::Int, ωi::Int,  ωn::Int, χ₀::Array{ComplexF64,3},
     end
 end
 
+function F_diag!(qi::Int, ωi::Int,  ωn::Int, χ₀::Array{ComplexF64,3},
+                        buffer::Matrix{ComplexF64}, h::BSE_Asym_Helper)
+
+    for i in eachindex(h.block_i)
+        ii = h.block_i[i]
+        h.diag_asym_buffer[ii] = 0
+        for j in h.block_slices[i]
+            h.diag_asym_buffer[ii] += buffer[j, ωi]*(-χ₀[qi,h.ind1_list[j],ωi])
+        end
+    end
+end
+
 F_diag!(type, ωn, U, β, χ₀, h::BSE_Asym_Helper_Approx2) = nothing
 
 
@@ -103,14 +115,14 @@ Calculates the physical susceptibility `χ` and triangular vertex `λ` in a give
 
 TODO: refactor code duplications
 """
-function calc_χλ_impr(type::Symbol, qi::Int, ωi::Int, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,1}, 
+function calc_χλ_impr(type::Symbol, qi::Int, ωi::Int, ωn::Int, χ::Array{ComplexF64,2}, χ₀::Array{ComplexF64,3}, 
                  U::Float64, β::Float64, χ₀_asym::ComplexF64, h::HT) where  HT <: BSE_Asym_Helpers
     λ = Array{eltype(χ),1}(undef, size(χ, 1))
     χ_out = calc_χλ_impr!(λ, type, qi, ωi, ωn, χ, χ₀, U, β, χ₀_asym, h)
     return χ_out, λ
 end
 
-function calc_χλ_impr!(λ::Array{ComplexF64,1}, type::Symbol, qi::Int, ωi::Int, ωn::Int, χ::AbstractArray{ComplexF64,2}, χ₀::AbstractArray{ComplexF64,3}, 
+function calc_χλ_impr!(λ::Array{ComplexF64,1}, type::Symbol, qi::Int, ωi::Int, ωn::Int, χ::Array{ComplexF64,2}, χ₀::Array{ComplexF64,3}, 
                  U::Float64, β::Float64, χ₀_asym::ComplexF64, h::BSE_Asym_Helper)::ComplexF64
     s = type == :d ? -1 : 1
     F_diag!(qi, ωi, ωn, χ₀, type == :d ? h.buffer_d : h.buffer_m, h)

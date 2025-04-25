@@ -133,8 +133,8 @@ struct BSE_Asym_Helper <: BSE_Asym_Helpers
     χsp_asympt::Array{ComplexF64,1}
     χch_asympt::Array{ComplexF64,1}
     χpp_asympt::Array{ComplexF64,1}
-    buffer_m::Array{ComplexF64,2}
-    buffer_d::Array{ComplexF64,2}
+    buffer_m::OffsetArray{ComplexF64,2}
+    buffer_d::OffsetArray{ComplexF64,2}
     Nν_shell::Int
     I_core::Array{CartesianIndex{2},1}
     block_i::Vector{Int}
