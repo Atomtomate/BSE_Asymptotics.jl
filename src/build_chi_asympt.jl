@@ -152,7 +152,8 @@ end
                  F::AbstractArray{ComplexF64,3}, χ₀::AbstractArray{ComplexF64,3}, 
                  χ₀_asym::Array{ComplexF64,2}, γ::AbstractArray{ComplexF64,2}, 
                  χ::AbstractArray{ComplexF64/Float64,1},
-                 U::Float64, β::Float64, h::BSE_Asym_Helper)
+                 U::Float64, β::Float64, h::BSE_Asym_Helper; 
+                 diag_zero::Bool=true, use_threads::Bool=true)
     
 Calculates improved version of `λ₀ = χ₀ ⋆ F`.
 TODO: finish documentation and tests.
@@ -161,14 +162,18 @@ function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
                  F::AbstractArray{ComplexF64,3}, χ₀::AbstractArray{ComplexF64,3}, 
                  χ₀_asym::Array{ComplexF64,2}, γ::AbstractArray{ComplexF64,2}, 
                  χ::AbstractArray{T,1},
-                 U::Float64, β::Float64, h; diag_zero::Bool=true) where T <: Union{ComplexF64,Float64}
+                 U::Float64, β::Float64, h; diag_zero::Bool=true, use_threads::Bool=true) where T <: Union{ComplexF64,Float64}
+    @assert type in [:m, :d] "type must be :m or :d"
+
     s = (type == :d) ? -1 : +1
     ind_core = (h.Nν_shell+1):(size(χ₀,2)-h.Nν_shell)
     Nq = size(χ₀,1)
     Nν = length(ind_core)
     Nω = size(χ₀,3)
-    λasym = Array{ComplexF64,1}(undef, Nν)
-    λcore = Array{ComplexF64,1}(undef, Nν)
+    core_offset::Int = h.Nν_shell
+    NT = Threads.nthreads()
+    diag_buffers = [zeros(ComplexF64,size(h.diag_asym_buffer)) for ti in 1:NT]
+
     res = Array{ComplexF64,3}(undef, Nq, Nν, Nω)
 
     diag_term = if !diag_zero && hasfield(typeof(h), :diag_asym_buffer)
@@ -177,17 +182,19 @@ function calc_λ0_impr(type::Symbol, ωgrid::AbstractVector{Int},
         println(stderr, "DBG: NOT using diagonal terms in λ₀")
     end
 
-    for (ωi,ωn) in enumerate(ωgrid)
-        λasym = -(view(γ,:,ωi) .* (1 .+ s*U .* χ[ωi]) ) .+ 1
-        for qi in 1:Nq
-            λcore[:] = [s*dot(view(χ₀,qi,ind_core,ωi), view(F,νi,:,ωi))/(β^2) for νi in 1:size(F,1)]
-            diag_term = if !diag_zero && hasfield(typeof(h), :diag_asym_buffer)
-                F_diag!(type, ωn, U, β, χ₀[qi,:,ωi], h)
-                view(h.diag_asym_buffer, ind_core)
-            else
-                0.0
+    
+
+    Threads.@threads for ωi in eachindex(ωgrid)
+        ωn = ωgrid[ωi]
+        for νi in axes(F,1)
+            for qi in 1:Nq
+                if !diag_zero && νi == 1 && hasfield(typeof(h), :diag_asym_buffer)
+                    F_diag!(diag_buffers[Threads.threadid()], qi, ωi, ωn, χ₀, type == :d ? h.buffer_d : h.buffer_m, h)
+                end
+                λcore = s*dot(view(χ₀,qi,ind_core,ωi), view(F,νi,:,ωi))/(β^2) 
+                λasym = -(γ[νi,ωi] * (1 + s*U * χ[ωi]) ) + 1
+                res[qi,νi,ωi] = λcore + χ₀_asym[qi,ωi] * U *(λasym - 1) + diag_buffers[Threads.threadid()][core_offset+νi]
             end
-            res[qi,:,ωi] = λcore + χ₀_asym[qi,ωi].*U.*(λasym .- 1) .+ diag_term
         end
     end
     return res
