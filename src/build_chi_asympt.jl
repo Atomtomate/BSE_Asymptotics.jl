@@ -118,7 +118,7 @@ TODO: refactor code duplications
 function calc_χλ_impr(type::Symbol, qi::Int, ωi::Int, ωn::Int, χ::Array{ComplexF64,2}, χ₀::Array{ComplexF64,3}, 
                  U::Float64, β::Float64, χ₀_asym::ComplexF64, h::HT) where  HT <: BSE_Asym_Helpers
     λ = Array{eltype(χ),1}(undef, size(χ, 1))
-    χ_out = calc_χλ_impr!(λ, type, qi, ωi, ωn, χ, χ₀, U, β, χ₀_asym, h)
+    χ_out = calc_χλ_impr!(λ, h.diag_asym_buffer, type, qi, ωi, ωn, χ, χ₀, U, β, χ₀_asym, h)
     return χ_out, λ
 end
 
